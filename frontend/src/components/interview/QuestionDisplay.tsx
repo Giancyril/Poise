@@ -5,9 +5,12 @@ import {
   ChevronRight,
   Sparkles,
   ArrowLeft,
-  MessageSquareQuote
+  MessageSquareQuote,
+  FileText,
+  RotateCcw
 } from 'lucide-react';
 import type { Question } from '../../types';
+import { AudioRecorder } from './AudioRecorder';
 
 interface QuestionDisplayProps {
   question: Question;
@@ -15,6 +18,9 @@ interface QuestionDisplayProps {
   totalQuestions: number;
   onNextQuestion: () => void;
   onEndSession: () => void;
+  onAudioSubmitted: (blob: Blob, durationSeconds: number) => Promise<string | null>;
+  isTranscribing: boolean;
+  transcriptionError: string | null;
   isLoadingNext: boolean;
 }
 
@@ -24,11 +30,14 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   totalQuestions,
   onNextQuestion,
   onEndSession,
+  onAudioSubmitted,
+  isTranscribing,
+  transcriptionError,
   isLoadingNext
 }) => {
   const [showHints, setShowHints] = useState(false);
-  const [textAnswer, setTextAnswer] = useState('');
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [latestTranscript, setLatestTranscript] = useState<string | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState<number>(0);
 
   const getLevelBadgeClass = (level: string) => {
     switch (level) {
@@ -41,16 +50,22 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     }
   };
 
-  const handleTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (textAnswer.trim()) {
-      setIsAnswerSubmitted(true);
+  const handleAudioComplete = async (blob: Blob, durationSeconds: number) => {
+    setRecordingDuration(durationSeconds);
+    const transcript = await onAudioSubmitted(blob, durationSeconds);
+    if (transcript) {
+      setLatestTranscript(transcript);
     }
   };
 
+  const handleReRecord = () => {
+    setLatestTranscript(null);
+    setRecordingDuration(0);
+  };
+
   const handleNext = () => {
-    setTextAnswer('');
-    setIsAnswerSubmitted(false);
+    setLatestTranscript(null);
+    setRecordingDuration(0);
     setShowHints(false);
     onNextQuestion();
   };
@@ -147,68 +162,78 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         )}
       </div>
 
-      {/* Stage 2 Text Answer Simulation Box */}
-      <div className="glass-panel p-6 rounded-2xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-xs font-semibold text-slate-300">
-            <Sparkles className="w-4 h-4 text-violet-400" />
-            <span>Practice Response (Stage 2 Text Mode Verification)</span>
-          </div>
-          <span className="text-xs text-slate-500">Audio capture pipeline connects in Stage 3</span>
-        </div>
-
-        {!isAnswerSubmitted ? (
-          <form onSubmit={handleTextSubmit} className="space-y-3">
-            <textarea
-              value={textAnswer}
-              onChange={(e) => setTextAnswer(e.target.value)}
-              rows={4}
-              placeholder="Type your spoken answer or talking points here to test question flow..."
-              className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-transparent transition-all"
-            />
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={!textAnswer.trim()}
-                className="py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold disabled:opacity-40 transition-all cursor-pointer"
-              >
-                Submit Answer (Verify Flow)
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-xs flex items-start space-x-2">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+      {/* Centerpiece: Audio Recorder OR Transcript Result */}
+      {!latestTranscript ? (
+        <AudioRecorder
+          onRecordingComplete={handleAudioComplete}
+          isTranscribing={isTranscribing}
+          transcriptionError={transcriptionError}
+        />
+      ) : (
+        <div className="glass-panel p-6 rounded-3xl space-y-5 animate-fadeIn border-emerald-900/40">
+          {/* Transcript Success Header */}
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800/50 text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
               <div>
-                <p className="font-medium">Answer recorded successfully!</p>
-                <p className="text-emerald-400/80 mt-1 italic">"{textAnswer}"</p>
+                <h4 className="text-sm font-semibold text-white">Spoken Answer Transcribed</h4>
+                <p className="text-xs text-slate-400">
+                  Duration: {Math.round(recordingDuration)}s &bull; Powered by Whisper STT
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={isLoadingNext}
-                className="py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-lg shadow-violet-600/20 flex items-center space-x-2 transition-all cursor-pointer"
-              >
-                {isLoadingNext ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Loading Next Question...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{currentIndex >= totalQuestions ? 'Finish Session' : 'Next Question'}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
+            <button
+              type="button"
+              onClick={handleReRecord}
+              className="inline-flex items-center space-x-1.5 text-xs text-slate-400 hover:text-slate-200 py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Re-record</span>
+            </button>
+          </div>
+
+          {/* Transcript Body */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <FileText className="w-3.5 h-3.5 text-violet-400" />
+              <span>Your Spoken Transcript</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-sm text-slate-200 leading-relaxed italic">
+              "{latestTranscript}"
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Notice & Next Step Button */}
+          <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-xs text-slate-500 flex items-center space-x-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+              <span>Structured feedback & delivery analytics connect in Stage 4</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={isLoadingNext}
+              className="py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-lg shadow-violet-600/25 flex items-center justify-center space-x-2 transition-all cursor-pointer"
+            >
+              {isLoadingNext ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Loading Next Question...</span>
+                </>
+              ) : (
+                <>
+                  <span>{currentIndex >= totalQuestions ? 'Complete Session' : 'Next Question'}</span>
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

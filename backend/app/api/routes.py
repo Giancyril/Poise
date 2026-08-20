@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-from fastapi import APIRouter, HTTPException, status
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from app.models.schemas import (
     TrackType,
     DifficultyLevel,
@@ -7,10 +7,12 @@ from app.models.schemas import (
     StartSessionResponse,
     NextQuestionRequest,
     NextQuestionResponse,
+    TranscribeAudioResponse,
     SessionState
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
+from app.services.whisper_service import whisper_service
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
@@ -121,6 +123,49 @@ async def get_next_question(req: NextQuestionRequest):
         total_questions=session.total_questions,
         question=next_question,
         is_completed=False
+    )
+
+@router.post("/transcribe", response_model=TranscribeAudioResponse)
+async def transcribe_audio_answer(
+    file: UploadFile = File(...),
+    session_id: str = Form(...),
+    question_id: str = Form(...),
+    duration_seconds: float = Form(0.0)
+):
+    """
+    Receives recorded audio from browser MediaRecorder and transcribes it via Whisper API.
+    """
+    session = session_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview session not found"
+        )
+
+    audio_bytes = await file.read()
+    transcript, error = await whisper_service.transcribe_audio(
+        audio_bytes=audio_bytes,
+        filename=file.filename or "recording.webm",
+        duration_seconds=duration_seconds
+    )
+
+    if error:
+        return TranscribeAudioResponse(
+            session_id=session_id,
+            question_id=question_id,
+            transcript="",
+            duration_seconds=duration_seconds,
+            success=False,
+            error=error
+        )
+
+    return TranscribeAudioResponse(
+        session_id=session_id,
+        question_id=question_id,
+        transcript=transcript,
+        duration_seconds=duration_seconds,
+        success=True,
+        error=None
     )
 
 @router.get("/session/{session_id}", response_model=SessionState)

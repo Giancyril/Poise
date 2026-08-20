@@ -60,3 +60,11 @@ class NextQuestionResponse(BaseModel):
     total_questions: int
     question: Optional[Question] = None
     is_completed: bool
+
+class TranscribeAudioResponse(BaseModel):
+    session_id: str
+    question_id: str
+    transcript: str
+    duration_seconds: float
+    success: bool
+    error: Optional[str] = None

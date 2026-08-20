@@ -54,3 +54,12 @@ export interface NextQuestionResponse {
   question: Question | null;
   is_completed: boolean;
 }
+
+export interface TranscribeAudioResponse {
+  session_id: string;
+  question_id: string;
+  transcript: string;
+  duration_seconds: number;
+  success: boolean;
+  error?: string | null;
+}

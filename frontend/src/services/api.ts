@@ -3,7 +3,8 @@ import type {
   LevelOption,
   StartSessionRequest,
   StartSessionResponse,
-  NextQuestionResponse
+  NextQuestionResponse,
+  TranscribeAudioResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -46,5 +47,30 @@ export async function getNextQuestion(
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Failed to retrieve next question');
   }
+  return response.json();
+}
+
+export async function transcribeAudio(
+  audioBlob: Blob,
+  sessionId: string,
+  questionId: string,
+  durationSeconds: number
+): Promise<TranscribeAudioResponse> {
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'recording.webm');
+  formData.append('session_id', sessionId);
+  formData.append('question_id', questionId);
+  formData.append('duration_seconds', durationSeconds.toString());
+
+  const response = await fetch(`${API_BASE}/api/interview/transcribe`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Audio transcription request failed');
+  }
+
   return response.json();
 }
