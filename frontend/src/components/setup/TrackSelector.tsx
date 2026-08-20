@@ -3,7 +3,6 @@ import {
   Code,
   Users,
   ChevronRight,
-  Sparkles,
   Layers,
   BarChart2,
   Briefcase,
@@ -48,7 +47,7 @@ const FALLBACK_TRACKS: TrackOption[] = [
 
 const FALLBACK_LEVELS: LevelOption[] = [
   { id: 'junior', name: 'Junior', description: 'Foundational concepts & practical execution' },
-  { id: 'mid',    name: 'Mid-Level', description: 'Trade-offs, edge cases & real-world experience' },
+  { id: 'mid', name: 'Mid-Level', description: 'Trade-offs, edge cases & real-world experience' },
   { id: 'senior', name: 'Senior / Staff', description: 'Architecture, ambiguity & strategic impact' }
 ];
 
@@ -98,10 +97,6 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
     <div className="max-w-3xl w-full mx-auto space-y-6 animate-fadeSlideUp relative z-10">
       {/* ── Hero Heading ── */}
       <div className="text-center space-y-3 pb-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full badge badge-violet mb-1">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>AI-Powered Interview Coach</span>
-        </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold gradient-text">
           Configure Your Session
         </h2>
@@ -128,11 +123,10 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
               key={trackId}
               type="button"
               onClick={() => handleTrackChange(trackId)}
-              className={`p-5 rounded-2xl text-left border transition-all duration-250 cursor-pointer group card-lift ${
-                isActive
-                  ? 'bg-violet-950/45 border-violet-500/70 shadow-lg shadow-violet-950/40 ring-1 ring-violet-500/40'
-                  : 'glass-panel-interactive border-slate-800/60 opacity-75 hover:opacity-100'
-              }`}
+              className={`p-5 rounded-2xl text-left border transition-all duration-250 cursor-pointer group card-lift ${isActive
+                ? 'bg-violet-950/45 border-violet-500/70 shadow-lg shadow-violet-950/40 ring-1 ring-violet-500/40'
+                : 'glass-panel-interactive border-slate-800/60 opacity-75 hover:opacity-100'
+                }`}
             >
               <div className="flex items-start space-x-3">
                 <div className={`p-2.5 rounded-xl transition-colors ${isActive ? 'bg-violet-600 text-white shadow shadow-violet-600/30' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'}`}>
@@ -160,7 +154,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
 
         {isLoadingTracks ? (
           <div className="grid grid-cols-2 gap-3">
-            {[1,2,3,4].map(i => (
+            {[1, 2, 3, 4].map(i => (
               <div key={i} className="skeleton h-14 rounded-xl" />
             ))}
           </div>
@@ -173,11 +167,10 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`p-3.5 rounded-xl text-left border text-sm transition-all duration-200 cursor-pointer group ${
-                    isSelected
-                      ? 'bg-slate-800/90 border-violet-500/75 text-white shadow-md'
-                      : 'bg-slate-900/50 border-slate-800/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80'
-                  }`}
+                  className={`p-3.5 rounded-xl text-left border text-sm transition-all duration-200 cursor-pointer group ${isSelected
+                    ? 'bg-slate-800/90 border-violet-500/75 text-white shadow-md'
+                    : 'bg-slate-900/50 border-slate-800/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80'
+                    }`}
                 >
                   <div className={`font-semibold text-sm leading-tight ${isSelected ? 'text-white' : 'text-slate-200'}`}>{cat.name}</div>
                   <div className="text-xs text-slate-400 mt-1 leading-snug line-clamp-1">{cat.description}</div>
@@ -204,11 +197,10 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                   key={lvl.id}
                   type="button"
                   onClick={() => setSelectedLevel(lvl.id as DifficultyLevel)}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
-                      : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                  }`}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
+                    ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
+                    : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
                 >
                   {lvl.name}
                 </button>
@@ -236,11 +228,10 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                   key={num}
                   type="button"
                   onClick={() => setTotalQuestions(num)}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
-                      : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                  }`}
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
+                    ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
+                    : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
                 >
                   {num} Questions
                 </button>

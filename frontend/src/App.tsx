@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import type {
   StartSessionRequest,
   StartSessionResponse,
@@ -134,12 +134,10 @@ export const App: React.FC = () => {
       {/* Header */}
       <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b border-slate-800/80">
         <div className="flex items-center space-x-3 cursor-pointer group" onClick={handleResetSession}>
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
-            <Mic className="w-5 h-5 text-white" />
-          </div>
+
           <div>
-            <h1 className="font-extrabold text-base sm:text-lg tracking-tight gradient-text">
-              AI Mock Interview Coach
+            <h1 className="font-extrabold text-base sm:text-lg tracking-widest gradient-text">
+              POISE
             </h1>
             <p className="text-xs text-slate-400">Intelligent Voice & STAR Interview Practice</p>
           </div>
