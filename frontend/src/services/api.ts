@@ -6,7 +6,9 @@ import type {
   NextQuestionResponse,
   TranscribeAudioResponse,
   SubmitAnswerResponse,
-  EndSessionResponse
+  EndSessionResponse,
+  SpeechTelemetrySnapshot,
+  SpeechTelemetryResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -137,5 +139,23 @@ export async function synthesizeSpeechAudio(
     return { audioBlob: blob, fallbackToBrowser: false };
   } catch {
     return { audioBlob: null, fallbackToBrowser: true };
+  }
+}
+
+// ── Feature 2: Speech Telemetry ───────────────────────────────────────────────
+
+export async function submitSpeechTelemetry(
+  snapshot: SpeechTelemetrySnapshot
+): Promise<SpeechTelemetryResponse | null> {
+  try {
+    const response = await fetch(`${API_BASE}/api/interview/telemetry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snapshot)
+    });
+    if (!response.ok) return null;
+    return response.json() as Promise<SpeechTelemetryResponse>;
+  } catch {
+    return null;
   }
 }

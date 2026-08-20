@@ -140,3 +140,30 @@ export interface SubmitAnswerResponse {
 export interface EndSessionResponse {
   summary: SessionSummary;
 }
+
+// ── Feature 2: Speech Telemetry ───────────────────────────────────────────────
+
+export type PaceAssessment =
+  | 'too_slow'
+  | 'good'
+  | 'optimal'
+  | 'a_bit_fast'
+  | 'too_fast'
+  | 'no_speech';
+
+export interface SpeechTelemetrySnapshot {
+  session_id: string;
+  question_id: string;
+  estimated_wpm: number;
+  peak_volume: number;
+  avg_volume: number;
+  recording_duration_seconds: number;
+}
+
+export interface SpeechTelemetryResponse {
+  session_id: string;
+  question_id: string;
+  estimated_wpm: number;
+  pace_label: PaceAssessment;
+  coaching_tip: string;
+}
