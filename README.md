@@ -78,8 +78,8 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure environment variables
-cp .env.example .env
+# Configure environment variables (add OPENAI_API_KEY if available)
+# .env is pre-configured and ignored in .gitignore
 
 # Verify environment and launch server
 python verify_env.py
