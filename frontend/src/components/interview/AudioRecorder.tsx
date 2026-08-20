@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Mic,
   Square,
@@ -8,6 +8,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
+import { useAudioAnalyser } from '../../hooks/useAudioAnalyser';
+import { LiveSpectrogram } from './LiveSpectrogram';
+import { SpeechTelemetryHUD } from './SpeechTelemetryHUD';
 
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob, durationSeconds: number) => void;
@@ -23,8 +26,27 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const {
     state, recordingTime, audioLevels, volume,
     errorMessage, startRecording, stopRecording,
-    resetRecording, isPermissionDenied
+    resetRecording, isPermissionDenied, mediaStream
   } = useAudioRecorder();
+
+  const {
+    isActive: isAnalyserActive,
+    analysisData,
+    connectStream,
+    disconnect: disconnectAnalyser
+  } = useAudioAnalyser();
+
+  // Connect the analyser whenever a live stream is available
+  useEffect(() => {
+    if (state === 'recording' && mediaStream) {
+      connectStream(mediaStream);
+    } else {
+      disconnectAnalyser();
+    }
+    return () => {
+      disconnectAnalyser();
+    };
+  }, [state, mediaStream]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -38,9 +60,12 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   const isBusy = state === 'processing' || isTranscribing;
+  const freqData = analysisData?.frequencyData ?? null;
+  const liveVolume = analysisData?.volume ?? (volume / 100);
+  const liveWPM = analysisData?.estimatedWPM ?? 0;
 
   return (
-    <div className={`glass-panel p-8 rounded-3xl text-center space-y-7 relative overflow-hidden border-slate-800/80 shadow-xl transition-all duration-500 ${
+    <div className={`glass-panel p-8 rounded-3xl text-center space-y-6 relative overflow-hidden border-slate-800/80 shadow-xl transition-all duration-500 ${
       state === 'recording' ? 'border-red-900/40' : ''
     }`}>
       {/* Recording ambient glow */}
@@ -82,21 +107,30 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         </div>
       )}
 
-      {/* Center Controls */}
-      <div className="flex flex-col items-center gap-6 py-2">
-        {/* Timer */}
-        {state === 'recording' && (
-          <div className="flex items-center gap-2 bg-slate-950/80 border border-red-500/30 px-5 py-2 rounded-full animate-fadeIn">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-            <span className="font-mono text-sm font-bold text-red-400 tracking-wider">
-              {formatTime(recordingTime)}
-            </span>
-          </div>
-        )}
+      {/* ── Live Spectrogram (shown while recording) ── */}
+      {state === 'recording' && (
+        <div className="space-y-2.5">
+          <LiveSpectrogram
+            frequencyData={freqData}
+            isActive={isAnalyserActive}
+            numBars={36}
+            height={52}
+            className="opacity-90"
+          />
+          <SpeechTelemetryHUD
+            isRecording={state === 'recording'}
+            volume={liveVolume}
+            estimatedWPM={liveWPM}
+            elapsedSeconds={recordingTime}
+          />
+        </div>
+      )}
 
-        {/* Waveform */}
+      {/* Center Controls */}
+      <div className="flex flex-col items-center gap-6 py-1">
+        {/* Waveform — legacy bars shown while recording (below spectrogram) */}
         {state === 'recording' && (
-          <div className="flex items-center justify-center gap-1.5 h-14 w-56">
+          <div className="flex items-center justify-center gap-1.5 h-10 w-48">
             {audioLevels.map((lvl, i) => (
               <div
                 key={i}

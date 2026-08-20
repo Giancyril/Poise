@@ -13,6 +13,8 @@ export interface UseAudioRecorderReturn {
   stopRecording: () => Promise<Blob | null>;
   resetRecording: () => void;
   isPermissionDenied: boolean;
+  /** The live MediaStream (set while recording, null otherwise) */
+  mediaStream: MediaStream | null;
 }
 
 export function useAudioRecorder(): UseAudioRecorderReturn {
@@ -210,6 +212,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     startRecording,
     stopRecording,
     resetRecording,
-    isPermissionDenied
+    isPermissionDenied,
+    mediaStream: streamRef.current
   };
 }
