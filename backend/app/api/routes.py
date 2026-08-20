@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Response
 from app.models.schemas import (
     TrackType,
     DifficultyLevel,
@@ -12,12 +12,14 @@ from app.models.schemas import (
     FeedbackResponse,
     EndSessionRequest,
     EndSessionResponse,
-    SessionState
+    SessionState,
+    TTSRequest
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
 from app.services.whisper_service import whisper_service
 from app.services.delivery_service import delivery_service
+from app.services.tts_service import tts_service
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
@@ -288,3 +290,28 @@ async def get_session_state(session_id: str):
             detail="Session not found"
         )
     return session
+
+@router.post("/tts")
+async def generate_speech_audio(req: TTSRequest):
+    """
+    Synthesizes question text to human speech audio bytes (MP3) via OpenAI TTS.
+    Falls back with header metadata when operating in demo mode.
+    """
+    audio_bytes, content_type, err = await tts_service.generate_speech(
+        text=req.text,
+        voice=req.voice,
+        speed=req.speed
+    )
+    if err or not audio_bytes:
+        return Response(
+            content=b"",
+            status_code=status.HTTP_200_OK,
+            media_type="audio/mpeg",
+            headers={"X-TTS-Fallback": "browser", "X-TTS-Error": str(err or "No audio generated")}
+        )
+    
+    return Response(
+        content=audio_bytes,
+        media_type=content_type,
+        headers={"Content-Disposition": "inline; filename=speech.mp3"}
+    )
