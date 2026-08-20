@@ -6,7 +6,7 @@ from SessionSummary data, complete with STAR rubrics, delivery telemetry,
 recurring strengths, and focus growth areas.
 """
 from typing import Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models.schemas import (
     ReportExportRequest,
     ReportExportResponse,
@@ -18,7 +18,7 @@ class ReportExportService:
     def export_report(self, req: ReportExportRequest) -> ReportExportResponse:
         fmt = req.format or ReportFormat.MARKDOWN
         session_id = req.summary.session_id
-        timestamp = datetime.utcnow().strftime("%Y-%m-%d")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
         if fmt == ReportFormat.MARKDOWN:
             content = self._render_markdown(req)
@@ -40,7 +40,7 @@ class ReportExportService:
 
     def _render_markdown(self, req: ReportExportRequest) -> str:
         s: SessionSummary = req.summary
-        date_str = datetime.utcnow().strftime("%B %d, %Y")
+        date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
         lines = [
             f"# POISE Practice Session Report",
@@ -127,7 +127,7 @@ class ReportExportService:
 
     def _render_html(self, req: ReportExportRequest) -> str:
         s: SessionSummary = req.summary
-        date_str = datetime.utcnow().strftime("%B %d, %Y")
+        date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
         return f"""<!DOCTYPE html>
 <html lang="en">
