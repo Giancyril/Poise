@@ -10,7 +10,9 @@ import type {
   SpeechTelemetrySnapshot,
   SpeechTelemetryResponse,
   FollowUpRequest,
-  FollowUpResponse
+  FollowUpResponse,
+  CustomJDRequest,
+  CustomJDSessionResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -174,6 +176,23 @@ export async function requestFollowUpQuestion(
   });
   if (!response.ok) {
     throw new Error('Failed to generate follow-up question');
+  }
+  return response.json();
+}
+
+// ── Feature 4: Custom Interview Architect & JD Ingestion ─────────────────────
+
+export async function importJDAndCreateSession(
+  req: CustomJDRequest
+): Promise<CustomJDSessionResponse> {
+  const response = await fetch(`${API_BASE}/api/interview/custom-jd`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req)
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to analyze Job Description');
   }
   return response.json();
 }

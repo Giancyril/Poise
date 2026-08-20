@@ -191,3 +191,35 @@ export interface FollowUpResponse {
   rationale: string;
   suggested_answer_direction: string;
 }
+
+// ── Feature 4: Custom Interview Architect & JD Ingestion ─────────────────────
+
+export interface CustomJDRequest {
+  job_title: string;
+  company_name?: string;
+  job_description_text: string;
+  level: DifficultyLevel;
+  track?: TrackType;
+  total_questions?: number;
+}
+
+export interface ExtractedJDSkills {
+  primary_technologies: string[];
+  architectural_domains: string[];
+  behavioral_competencies: string[];
+  seniority_signals: string[];
+}
+
+export interface CustomJDSessionResponse {
+  session_id: string;
+  job_title: string;
+  company_name: string;
+  track: TrackType;
+  category: string;
+  level: DifficultyLevel;
+  total_questions: number;
+  current_question_index: number;
+  extracted_skills: ExtractedJDSkills;
+  question: Question;
+  tailored_questions: Question[];
+}
