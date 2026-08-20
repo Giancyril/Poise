@@ -130,15 +130,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-4 sm:p-6">
+    <div className="min-h-screen text-slate-100 flex flex-col justify-between p-4 sm:p-6 relative z-10">
       {/* Header */}
       <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b border-slate-800/80">
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={handleResetSession}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+        <div className="flex items-center space-x-3 cursor-pointer group" onClick={handleResetSession}>
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
             <Mic className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <h1 className="font-extrabold text-base sm:text-lg tracking-tight gradient-text">
               AI Mock Interview Coach
             </h1>
             <p className="text-xs text-slate-400">Intelligent Voice & STAR Interview Practice</p>
@@ -148,13 +148,13 @@ export const App: React.FC = () => {
         <div className="flex items-center space-x-2 text-xs">
           <span className="text-slate-400 hidden sm:inline">Backend API:</span>
           {backendStatus === 'online' && (
-            <span className="flex items-center text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2.5 py-1 rounded-full font-medium">
+            <span className="flex items-center text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-3 py-1 rounded-full font-semibold badge-emerald">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5" />
               Connected
             </span>
           )}
           {backendStatus === 'offline' && (
-            <span className="flex items-center text-amber-400 bg-amber-950/60 border border-amber-800/50 px-2.5 py-1 rounded-full font-medium">
+            <span className="flex items-center text-amber-400 bg-amber-950/60 border border-amber-800/50 px-3 py-1 rounded-full font-semibold badge-amber">
               <span className="w-2 h-2 rounded-full bg-amber-400 mr-1.5" />
               Offline
             </span>
@@ -162,10 +162,10 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main */}
+      {/* Main Container */}
       <main className="max-w-4xl w-full mx-auto my-auto py-8">
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center justify-between">
+          <div className="mb-6 p-4 rounded-2xl bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center justify-between animate-fadeSlideDown">
             <span>{errorMessage}</span>
             <button onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-white font-bold ml-2 cursor-pointer">&times;</button>
           </div>
@@ -190,19 +190,19 @@ export const App: React.FC = () => {
         )}
 
         {currentStep === 'summarizing' && (
-          <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-fadeIn">
-            <div className="w-16 h-16 rounded-2xl bg-violet-950/60 border border-violet-800/50 flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-fadeSlideUp">
+            <div className="w-16 h-16 rounded-2xl bg-violet-950/60 border border-violet-800/50 flex items-center justify-center animate-pulse-glow shadow-xl">
               <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
             </div>
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold text-white">Generating Your Performance Summary...</h3>
-              <p className="text-sm text-slate-400">
-                AI coach is analyzing patterns across all {totalQuestions} of your answers.
+              <h3 className="text-2xl font-extrabold text-white">Generating Performance Dashboard...</h3>
+              <p className="text-sm text-slate-400 max-w-sm mx-auto">
+                Synthesizing patterns across all {totalQuestions} answered questions with AI rubric evaluation.
               </p>
             </div>
-            <div className="flex items-center space-x-2 text-xs text-violet-400 animate-pulse">
+            <div className="flex items-center space-x-2 text-xs text-violet-400 badge badge-violet">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Synthesizing strengths, growth areas, and your personalized focus goal</span>
+              <span>Analyzing strengths, growth areas, and personalized focus goal</span>
             </div>
           </div>
         )}
@@ -218,7 +218,7 @@ export const App: React.FC = () => {
       {/* Footer */}
       <footer className="max-w-5xl w-full mx-auto py-4 border-t border-slate-900 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <span>AI Mock Interview Coach &copy; 2026</span>
-        <span className="text-violet-400/80">Stage 5: Session Flow & Summary Active</span>
+        <span className="text-violet-400/80 font-medium">Stage 6: Professional UI/UX Pass Active</span>
       </footer>
     </div>
   );

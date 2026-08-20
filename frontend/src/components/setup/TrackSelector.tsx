@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Code,
   Users,
-  Briefcase,
   ChevronRight,
   Sparkles,
   Layers,
-  BarChart2
+  BarChart2,
+  Briefcase,
+  Loader2
 } from 'lucide-react';
 import type {
   TrackType,
@@ -22,235 +23,249 @@ interface TrackSelectorProps {
   isLoading: boolean;
 }
 
-export const TrackSelector: React.FC<TrackSelectorProps> = ({
-  onStartSession,
-  isLoading
-}) => {
+const FALLBACK_TRACKS: TrackOption[] = [
+  {
+    id: 'technical',
+    name: 'Technical Interview',
+    description: 'Architecture, trade-offs, debugging, and system design.',
+    categories: [
+      { id: 'Frontend Engineer', name: 'Frontend Engineer', description: 'React, TypeScript, Web Vitals, state management.' },
+      { id: 'Backend Engineer', name: 'Backend Engineer', description: 'APIs, databases, concurrency, caching.' },
+      { id: 'System Design', name: 'System Design', description: 'Scalability, microservices, data modeling.' },
+      { id: 'Algorithms & Data Structures', name: 'Algorithms & DS', description: 'Problem-solving, complexity, optimization.' }
+    ]
+  },
+  {
+    id: 'behavioral',
+    name: 'Behavioral Interview (STAR)',
+    description: 'Leadership, communication, conflict, and impact.',
+    categories: [
+      { id: 'Behavioral / STAR', name: 'Standard Behavioral', description: 'Conflict, leadership, ambiguity, failure & learning.' },
+      { id: 'Engineering Leadership', name: 'Engineering Leadership', description: 'Mentorship, cross-functional collaboration, strategy.' }
+    ]
+  }
+];
+
+const FALLBACK_LEVELS: LevelOption[] = [
+  { id: 'junior', name: 'Junior', description: 'Foundational concepts & practical execution' },
+  { id: 'mid',    name: 'Mid-Level', description: 'Trade-offs, edge cases & real-world experience' },
+  { id: 'senior', name: 'Senior / Staff', description: 'Architecture, ambiguity & strategic impact' }
+];
+
+const QUESTION_COUNTS = [3, 5, 7, 10];
+
+export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, isLoading }) => {
   const [tracks, setTracks] = useState<TrackOption[]>([]);
   const [levels, setLevels] = useState<LevelOption[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<TrackType>('technical');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Frontend Engineer');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<DifficultyLevel>('mid');
   const [totalQuestions, setTotalQuestions] = useState<number>(5);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isLoadingTracks, setIsLoadingTracks] = useState(true);
 
   useEffect(() => {
+    setIsLoadingTracks(true);
     getTracksAndCategories()
       .then((data) => {
         setTracks(data.tracks);
         setLevels(data.levels);
-        const techTrack = data.tracks.find(t => t.id === 'technical');
-        if (techTrack && techTrack.categories.length > 0) {
-          setSelectedCategory(techTrack.categories[0].id);
-        }
+        const tech = data.tracks.find(t => t.id === 'technical');
+        if (tech?.categories.length) setSelectedCategory(tech.categories[0].id);
       })
       .catch(() => {
-        setFetchError('Could not load tracks from server. Using standard defaults.');
-        setTracks([
-          {
-            id: 'technical',
-            name: 'Technical Interview',
-            description: 'Architecture, trade-offs, debugging, and system design.',
-            categories: [
-              { id: 'Frontend Engineer', name: 'Frontend Engineer', description: 'React, TypeScript, Web Vitals, state management.' },
-              { id: 'Backend Engineer', name: 'Backend Engineer', description: 'APIs, databases, concurrency, caching.' },
-              { id: 'System Design', name: 'System Design', description: 'Scalability, microservices, data modeling.' }
-            ]
-          },
-          {
-            id: 'behavioral',
-            name: 'Behavioral Interview (STAR)',
-            description: 'Leadership, communication, conflict, and impact.',
-            categories: [
-              { id: 'Behavioral / STAR', name: 'Standard Behavioral (STAR)', description: 'Conflict, leadership, ambiguity, failure & learning.' },
-              { id: 'Engineering Leadership', name: 'Engineering Leadership', description: 'Mentorship, cross-functional collaboration, strategy.' }
-            ]
-          }
-        ]);
-        setLevels([
-          { id: 'junior', name: 'Junior', description: 'Foundational concepts & practical execution' },
-          { id: 'mid', name: 'Mid-Level', description: 'Trade-offs, edge cases & real-world experience' },
-          { id: 'senior', name: 'Senior / Staff', description: 'Architecture, ambiguity & strategic impact' }
-        ]);
-      });
+        setFetchError('Using default tracks — backend offline.');
+        setTracks(FALLBACK_TRACKS);
+        setLevels(FALLBACK_LEVELS);
+        setSelectedCategory(FALLBACK_TRACKS[0].categories[0].id);
+      })
+      .finally(() => setIsLoadingTracks(false));
   }, []);
 
-  const activeTrackObj = tracks.find(t => t.id === selectedTrack) || tracks[0];
+  const activeTrack = tracks.find(t => t.id === selectedTrack) || tracks[0];
 
   const handleTrackChange = (trackId: TrackType) => {
     setSelectedTrack(trackId);
-    const trackObj = tracks.find(t => t.id === trackId);
-    if (trackObj && trackObj.categories.length > 0) {
-      setSelectedCategory(trackObj.categories[0].id);
-    }
+    const t = tracks.find(t => t.id === trackId);
+    if (t?.categories.length) setSelectedCategory(t.categories[0].id);
   };
 
   const handleStart = () => {
-    onStartSession({
-      track: selectedTrack,
-      category: selectedCategory,
-      level: selectedLevel,
-      total_questions: totalQuestions
-    });
+    onStartSession({ track: selectedTrack, category: selectedCategory, level: selectedLevel, total_questions: totalQuestions });
   };
 
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-8 animate-fadeIn">
-      {/* Intro Heading */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-violet-950/80 border border-violet-800/40 text-violet-300 text-xs font-medium mb-1">
-          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          <span>Interactive AI Practice Session</span>
+    <div className="max-w-3xl w-full mx-auto space-y-6 animate-fadeSlideUp relative z-10">
+      {/* ── Hero Heading ── */}
+      <div className="text-center space-y-3 pb-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full badge badge-violet mb-1">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>AI-Powered Interview Coach</span>
         </div>
-        <h2 className="text-3xl font-bold tracking-tight text-white">
-          Configure Your Mock Interview
+        <h2 className="text-3xl sm:text-4xl font-extrabold gradient-text">
+          Configure Your Session
         </h2>
-        <p className="text-slate-400 text-sm max-w-md mx-auto">
-          Choose your practice track, target focus area, and seniority calibration.
+        <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+          Select a practice track, your specialization, and seniority level — then speak your answers out loud for real-time AI feedback.
         </p>
       </div>
 
       {fetchError && (
-        <div className="bg-amber-950/40 border border-amber-800/40 text-amber-300 text-xs p-3 rounded-lg text-center">
+        <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-800/40 text-amber-300/90 text-xs text-center">
           {fetchError}
         </div>
       )}
 
-      {/* 1. Track Type Switcher */}
+      {/* ── 1. Track Selector ── */}
       <div className="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          onClick={() => handleTrackChange('technical')}
-          className={`p-5 rounded-2xl text-left border transition-all duration-200 cursor-pointer ${
-            selectedTrack === 'technical'
-              ? 'bg-violet-950/40 border-violet-500/80 shadow-lg shadow-violet-950/50 ring-1 ring-violet-500/50'
-              : 'glass-panel-interactive border-slate-800/80 opacity-70 hover:opacity-100'
-          }`}
-        >
-          <div className="flex items-center space-x-3 mb-2">
-            <div className={`p-2 rounded-xl ${selectedTrack === 'technical' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              <Code className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-100 text-base">Technical Track</h3>
-              <p className="text-xs text-slate-400">Architecture, code design & systems</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTrackChange('behavioral')}
-          className={`p-5 rounded-2xl text-left border transition-all duration-200 cursor-pointer ${
-            selectedTrack === 'behavioral'
-              ? 'bg-violet-950/40 border-violet-500/80 shadow-lg shadow-violet-950/50 ring-1 ring-violet-500/50'
-              : 'glass-panel-interactive border-slate-800/80 opacity-70 hover:opacity-100'
-          }`}
-        >
-          <div className="flex items-center space-x-3 mb-2">
-            <div className={`p-2 rounded-xl ${selectedTrack === 'behavioral' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-100 text-base">Behavioral Track</h3>
-              <p className="text-xs text-slate-400">STAR method, leadership & collaboration</p>
-            </div>
-          </div>
-        </button>
+        {(['technical', 'behavioral'] as TrackType[]).map((trackId) => {
+          const isActive = selectedTrack === trackId;
+          const Icon = trackId === 'technical' ? Code : Users;
+          const label = trackId === 'technical' ? 'Technical Track' : 'Behavioral (STAR)';
+          const sub = trackId === 'technical' ? 'Architecture, code design & systems' : 'STAR method, leadership & impact';
+          return (
+            <button
+              key={trackId}
+              type="button"
+              onClick={() => handleTrackChange(trackId)}
+              className={`p-5 rounded-2xl text-left border transition-all duration-250 cursor-pointer group card-lift ${
+                isActive
+                  ? 'bg-violet-950/45 border-violet-500/70 shadow-lg shadow-violet-950/40 ring-1 ring-violet-500/40'
+                  : 'glass-panel-interactive border-slate-800/60 opacity-75 hover:opacity-100'
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                <div className={`p-2.5 rounded-xl transition-colors ${isActive ? 'bg-violet-600 text-white shadow shadow-violet-600/30' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className={`font-bold text-sm ${isActive ? 'text-white' : 'text-slate-300'}`}>{label}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{sub}</p>
+                </div>
+              </div>
+              {isActive && (
+                <div className="mt-3 h-0.5 w-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-400 opacity-70" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* 2. Category / Role Selection */}
-      <div className="glass-panel p-6 rounded-2xl space-y-4">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+      {/* ── 2. Category ── */}
+      <div className="glass-panel p-5 rounded-2xl space-y-4 animate-fadeSlideUp stagger-2">
+        <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
           <Briefcase className="w-4 h-4 text-violet-400" />
           <span>Select Role / Specialization</span>
         </label>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {activeTrackObj?.categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`p-3.5 rounded-xl text-left border text-sm transition-all duration-150 cursor-pointer ${
-                selectedCategory === cat.id
-                  ? 'bg-slate-800 border-violet-500/80 text-white shadow-md'
-                  : 'bg-slate-900/60 border-slate-800/70 text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              <div className="font-medium text-slate-100">{cat.name}</div>
-              <div className="text-xs text-slate-400 mt-1 line-clamp-1">{cat.description}</div>
-            </button>
-          ))}
-        </div>
+        {isLoadingTracks ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="skeleton h-14 rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {activeTrack?.categories.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`p-3.5 rounded-xl text-left border text-sm transition-all duration-200 cursor-pointer group ${
+                    isSelected
+                      ? 'bg-slate-800/90 border-violet-500/75 text-white shadow-md'
+                      : 'bg-slate-900/50 border-slate-800/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80'
+                  }`}
+                >
+                  <div className={`font-semibold text-sm leading-tight ${isSelected ? 'text-white' : 'text-slate-200'}`}>{cat.name}</div>
+                  <div className="text-xs text-slate-400 mt-1 leading-snug line-clamp-1">{cat.description}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* 3. Seniority Level & Question Count */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="glass-panel p-5 rounded-2xl space-y-3">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+      {/* ── 3. Level & Count ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeSlideUp stagger-3">
+        {/* Seniority */}
+        <div className="glass-panel p-5 rounded-2xl space-y-4">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
             <Layers className="w-4 h-4 text-violet-400" />
-            <span>Seniority Calibration</span>
+            <span>Seniority Level</span>
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {(levels.length > 0 ? levels : [
-              { id: 'junior', name: 'Junior', description: '' },
-              { id: 'mid', name: 'Mid', description: '' },
-              { id: 'senior', name: 'Senior', description: '' }
-            ]).map((lvl) => (
-              <button
-                key={lvl.id}
-                type="button"
-                onClick={() => setSelectedLevel(lvl.id as DifficultyLevel)}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  selectedLevel === lvl.id
-                    ? 'bg-violet-600 text-white shadow'
-                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {lvl.name}
-              </button>
-            ))}
+            {(levels.length > 0 ? levels : FALLBACK_LEVELS).map((lvl) => {
+              const isSelected = selectedLevel === lvl.id;
+              return (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  onClick={() => setSelectedLevel(lvl.id as DifficultyLevel)}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
+                      : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  }`}
+                >
+                  {lvl.name}
+                </button>
+              );
+            })}
           </div>
+          {levels.length > 0 && (
+            <p className="text-[11px] text-slate-500 leading-snug">
+              {levels.find(l => l.id === selectedLevel)?.description}
+            </p>
+          )}
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl space-y-3">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+        {/* Question count */}
+        <div className="glass-panel p-5 rounded-2xl space-y-4">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
             <BarChart2 className="w-4 h-4 text-violet-400" />
-            <span>Questions in Session</span>
+            <span>Session Length</span>
           </label>
-          <div className="flex items-center space-x-3">
-            {[3, 5, 7].map((num) => (
-              <button
-                key={num}
-                type="button"
-                onClick={() => setTotalQuestions(num)}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  totalQuestions === num
-                    ? 'bg-violet-600 text-white shadow'
-                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {num} Questions
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-2">
+            {QUESTION_COUNTS.map((num) => {
+              const isSelected = totalQuestions === num;
+              return (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setTotalQuestions(num)}
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
+                      : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  }`}
+                >
+                  {num} Questions
+                </button>
+              );
+            })}
           </div>
+          <p className="text-[11px] text-slate-500">
+            {totalQuestions <= 3 ? 'Quick warm-up (~5 min)' : totalQuestions <= 5 ? 'Standard session (~12 min)' : totalQuestions <= 7 ? 'Deep practice (~18 min)' : 'Full simulation (~25 min)'}
+          </p>
         </div>
       </div>
 
-      {/* 4. Action Button */}
-      <div className="pt-2">
+      {/* ── 4. CTA ── */}
+      <div className="pt-1 animate-fadeSlideUp stagger-4">
         <button
           type="button"
           onClick={handleStart}
-          disabled={isLoading}
-          className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-violet-600/25 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          disabled={isLoading || !selectedCategory}
+          className="btn-primary w-full py-4 text-base"
         >
           {isLoading ? (
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Generating Tailored Interview Question...</span>
-            </div>
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Generating Tailored Questions...</span>
+            </>
           ) : (
             <>
               <span>Begin Practice Interview</span>
@@ -258,6 +273,9 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
             </>
           )}
         </button>
+        <p className="text-center text-xs text-slate-500 mt-3">
+          Powered by OpenAI GPT-4o + Whisper · Your answers are never stored
+        </p>
       </div>
     </div>
   );
