@@ -16,13 +16,16 @@ from app.models.schemas import (
     TTSRequest,
     SpeechTelemetrySnapshot,
     SpeechTelemetryResponse,
-    PaceAssessment
+    PaceAssessment,
+    FollowUpRequest,
+    FollowUpResponse
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
 from app.services.whisper_service import whisper_service
 from app.services.delivery_service import delivery_service
 from app.services.tts_service import tts_service
+from app.services.follow_up_service import follow_up_service
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
@@ -359,3 +362,14 @@ async def submit_speech_telemetry(snapshot: SpeechTelemetrySnapshot) -> SpeechTe
         pace_label=pace,
         coaching_tip=_PACE_TIPS[pace]
     )
+
+# ── Feature 3: Multi-Turn Follow-Up & Probing Engine ─────────────────────────
+
+@router.post("/follow-up", response_model=FollowUpResponse)
+async def generate_follow_up_question(req: FollowUpRequest) -> FollowUpResponse:
+    """
+    Dynamically generates a follow-up probing question calibrated by depth (shallow/medium/deep)
+    based on the candidate's actual answer transcript.
+    """
+    return await follow_up_service.generate_follow_up(req)
+
