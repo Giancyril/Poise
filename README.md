@@ -229,7 +229,6 @@ AI Mock Interview Coach/
 │   │   └── main.tsx                          # Application entry point
 │   ├── package.json
 │   └── vite.config.ts
-├── run_all_tests.ps1                          # Full-stack automated test runner
 └── README.md
 ```
 
@@ -322,14 +321,7 @@ Frontend web application will be running at `http://localhost:5173`.
 
 ### 3. Running Automated Tests
 
-To execute the complete full-stack automated test suite (38 backend tests + 33 frontend tests):
-
-```powershell
-# Run all tests using the PowerShell script
-.\run_all_tests.ps1
-```
-
-Or run each suite individually:
+Run each suite individually:
 
 ```bash
 # Backend pytest suite (38 tests)
