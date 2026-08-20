@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HelpCircle,
   ArrowLeft,
@@ -11,6 +11,8 @@ import {
 import type { Question, FeedbackResponse } from '../../types';
 import { AudioRecorder } from './AudioRecorder';
 import { FeedbackCard } from './FeedbackCard';
+import { InterviewerVoiceAvatar } from './InterviewerVoiceAvatar';
+import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 
 interface QuestionDisplayProps {
   question: Question;
@@ -26,6 +28,7 @@ interface QuestionDisplayProps {
   isEvaluating: boolean;
   evaluationError: string | null;
   isLoadingNext: boolean;
+  autoSpeak?: boolean;
 }
 
 const LEVEL_BADGE: Record<string, string> = {
@@ -37,14 +40,35 @@ const LEVEL_BADGE: Record<string, string> = {
 export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   question, currentIndex, totalQuestions,
   onNextQuestion, onEndSession, onAnswerSubmitted,
-  isEvaluating, evaluationError, isLoadingNext
+  isEvaluating, evaluationError, isLoadingNext,
+  autoSpeak = false
 }) => {
   const [showHints, setShowHints] = useState(false);
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textAnswer, setTextAnswer] = useState('');
   const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
 
+  const {
+    isPlaying: isVoicePlaying,
+    isLoading: isVoiceLoading,
+    isFallback: isVoiceFallback,
+    speak,
+    pause: pauseVoice,
+    resume: resumeVoice,
+    stop: stopVoice
+  } = useAudioPlayer();
+
+  useEffect(() => {
+    if (autoSpeak && question?.text) {
+      speak(question.text);
+    }
+    return () => {
+      stopVoice();
+    };
+  }, [question?.id, autoSpeak]);
+
   const handleAudioComplete = async (blob: Blob, durationSeconds: number) => {
+    stopVoice();
     const res = await onAnswerSubmitted({ audioBlob: blob, durationSeconds });
     if (res) setFeedback(res);
   };
@@ -52,6 +76,7 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const handleTextSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!textAnswer.trim()) return;
+    stopVoice();
     const dur = Math.max(10, Math.round(textAnswer.split(' ').length / 2.5));
     const res = await onAnswerSubmitted({ transcript: textAnswer, durationSeconds: dur });
     if (res) setFeedback(res);
@@ -60,10 +85,23 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const handleReRecord = () => { setFeedback(null); setTextAnswer(''); };
 
   const handleNext = () => {
+    stopVoice();
     setFeedback(null);
     setTextAnswer('');
     setShowHints(false);
     onNextQuestion();
+  };
+
+  const handlePlayVoice = () => {
+    speak(question.text);
+  };
+
+  const handlePauseVoice = () => {
+    pauseVoice();
+  };
+
+  const handleReplayVoice = () => {
+    speak(question.text);
   };
 
   const progressPct = Math.round(((currentIndex - 1) / totalQuestions) * 100);
@@ -74,7 +112,10 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={onEndSession}
+          onClick={() => {
+            stopVoice();
+            onEndSession();
+          }}
           className="btn-secondary"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -134,6 +175,18 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           </h3>
         </div>
 
+        {/* ── Interviewer Voice Player Avatar Strip ── */}
+        {!feedback && (
+          <InterviewerVoiceAvatar
+            isPlaying={isVoicePlaying}
+            isLoading={isVoiceLoading}
+            isFallback={isVoiceFallback}
+            onPlay={handlePlayVoice}
+            onPause={handlePauseVoice}
+            onReplay={handleReplayVoice}
+          />
+        )}
+
         {/* Hints */}
         {question.hints && question.hints.length > 0 && (
           <div className="pt-1">
@@ -187,7 +240,10 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => setInputMode(mode)}
+                  onClick={() => {
+                    stopVoice();
+                    setInputMode(mode);
+                  }}
                   className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     inputMode === mode
                       ? 'bg-violet-950/80 text-violet-300 border border-violet-800/60'
