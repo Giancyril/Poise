@@ -20,7 +20,9 @@ from app.models.schemas import (
     FollowUpRequest,
     FollowUpResponse,
     CustomJDRequest,
-    CustomJDSessionResponse
+    CustomJDSessionResponse,
+    ReportExportRequest,
+    ReportExportResponse
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
@@ -29,6 +31,7 @@ from app.services.delivery_service import delivery_service
 from app.services.tts_service import tts_service
 from app.services.follow_up_service import follow_up_service
 from app.services.jd_analysis_service import jd_analysis_service
+from app.services.report_export_service import report_export_service
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
@@ -426,4 +429,15 @@ async def create_custom_jd_session(req: CustomJDRequest) -> CustomJDSessionRespo
         question=first_q,
         tailored_questions=questions
     )
+
+# ── Feature 5: Exportable PDF/Markdown Reports & Practice History ────────────
+
+@router.post("/report/export", response_model=ReportExportResponse)
+async def export_session_report(req: ReportExportRequest) -> ReportExportResponse:
+    """
+    Synthesizes a structured, exportable report (Markdown, printable HTML, or JSON)
+    for a completed practice session.
+    """
+    return report_export_service.export_report(req)
+
 
