@@ -11,6 +11,19 @@ class DifficultyLevel(str, Enum):
     MID = "mid"
     SENIOR = "senior"
 
+class TTSVoice(str, Enum):
+    ALLOY = "alloy"
+    ECHO = "echo"
+    FABLE = "fable"
+    ONYX = "onyx"
+    NOVA = "nova"
+    SHIMMER = "shimmer"
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=2000, description="Text prompt to synthesize to audio")
+    voice: Optional[TTSVoice] = Field(default=TTSVoice.NOVA, description="Selected OpenAI TTS voice avatar")
+    speed: Optional[float] = Field(default=1.0, ge=0.5, le=2.0, description="Speech cadence speed multiplier")
+
 class QuestionCategory(BaseModel):
     id: str
     name: str
@@ -76,7 +89,7 @@ class SessionSummary(BaseModel):
     recurring_strengths: List[str]
     recurring_growth_areas: List[str]
     recommended_focus_area: str
-    question_breakdown: List[AnswerRecord]
+    question_breakdown: List[AnswerRecord] = Field(default_factory=list)
 
 class SessionState(BaseModel):
     session_id: str
@@ -85,15 +98,15 @@ class SessionState(BaseModel):
     level: DifficultyLevel
     total_questions: int
     current_question_index: int = 1
-    asked_questions: List[Question] = Field(default_factory=list)
+    questions_history: List[Question] = Field(default_factory=list)
     answers: List[AnswerRecord] = Field(default_factory=list)
     is_completed: bool = False
 
 class StartSessionRequest(BaseModel):
-    track: TrackType = Field(default=TrackType.TECHNICAL, description="Technical or Behavioral track")
-    category: str = Field(default="Frontend Engineer", description="Target role or topic")
-    level: DifficultyLevel = Field(default=DifficultyLevel.MID, description="Seniority level")
-    total_questions: int = Field(default=5, ge=1, le=10, description="Total questions for session")
+    track: TrackType
+    category: str
+    level: DifficultyLevel
+    total_questions: int = Field(default=5, ge=1, le=10)
 
 class StartSessionResponse(BaseModel):
     session_id: str
