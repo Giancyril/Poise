@@ -13,7 +13,10 @@ from app.models.schemas import (
     EndSessionRequest,
     EndSessionResponse,
     SessionState,
-    TTSRequest
+    TTSRequest,
+    SpeechTelemetrySnapshot,
+    SpeechTelemetryResponse,
+    PaceAssessment
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
@@ -314,4 +317,45 @@ async def generate_speech_audio(req: TTSRequest):
         content=audio_bytes,
         media_type=content_type,
         headers={"Content-Disposition": "inline; filename=speech.mp3"}
+    )
+
+# ── Feature 2: Real-time Speech Telemetry ────────────────────────────────────
+
+_PACE_TIPS: dict[PaceAssessment, str] = {
+    PaceAssessment.TOO_SLOW: "Pick up your pace slightly — aim for 120–150 wpm to keep interviewers engaged.",
+    PaceAssessment.GOOD: "Good pace. Maintain this rhythm and vary your speed for emphasis.",
+    PaceAssessment.OPTIMAL: "Excellent pacing. This range maximises comprehension and confidence.",
+    PaceAssessment.A_BIT_FAST: "Slow down slightly and add deliberate pauses after key points.",
+    PaceAssessment.TOO_FAST: "You're rushing — slow down, breathe, and pause between sentences.",
+    PaceAssessment.NO_SPEECH: "No speech detected. Speak clearly into your microphone.",
+}
+
+
+def _classify_pace(wpm: int) -> PaceAssessment:
+    if wpm == 0:
+        return PaceAssessment.NO_SPEECH
+    if wpm < 100:
+        return PaceAssessment.TOO_SLOW
+    if wpm < 130:
+        return PaceAssessment.GOOD
+    if wpm < 175:
+        return PaceAssessment.OPTIMAL
+    if wpm < 210:
+        return PaceAssessment.A_BIT_FAST
+    return PaceAssessment.TOO_FAST
+
+
+@router.post("/telemetry", response_model=SpeechTelemetryResponse)
+async def submit_speech_telemetry(snapshot: SpeechTelemetrySnapshot) -> SpeechTelemetryResponse:
+    """
+    Receives live speech telemetry (WPM, volume) from the frontend and returns
+    real-time pace coaching feedback. Stateless — no data is stored server-side.
+    """
+    pace = _classify_pace(snapshot.estimated_wpm)
+    return SpeechTelemetryResponse(
+        session_id=snapshot.session_id,
+        question_id=snapshot.question_id,
+        estimated_wpm=snapshot.estimated_wpm,
+        pace_label=pace,
+        coaching_tip=_PACE_TIPS[pace]
     )
