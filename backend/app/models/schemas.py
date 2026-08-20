@@ -235,3 +235,24 @@ class CustomJDSessionResponse(BaseModel):
     extracted_skills: ExtractedJDSkills
     question: Question
     tailored_questions: List[Question] = Field(default_factory=list)
+
+# ── Feature 5: Exportable PDF/Markdown Reports & Practice History ────────────
+
+class ReportFormat(str, Enum):
+    MARKDOWN = "markdown"
+    HTML = "html"
+    JSON_DATA = "json"
+
+class ReportExportRequest(BaseModel):
+    summary: SessionSummary
+    candidate_name: Optional[str] = Field(default="Candidate", max_length=100)
+    format: Optional[ReportFormat] = Field(default=ReportFormat.MARKDOWN)
+    include_transcripts: Optional[bool] = Field(default=True)
+    include_rubric_breakdown: Optional[bool] = Field(default=True)
+
+class ReportExportResponse(BaseModel):
+    session_id: str
+    format: ReportFormat
+    filename: str
+    content: str
+    download_url: Optional[str] = None
