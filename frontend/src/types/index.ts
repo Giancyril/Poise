@@ -167,3 +167,27 @@ export interface SpeechTelemetryResponse {
   pace_label: PaceAssessment;
   coaching_tip: string;
 }
+
+// ── Feature 3: Multi-Turn Follow-Up & Probing Engine ─────────────────────────
+
+export type FollowUpDepth = 'shallow' | 'medium' | 'deep';
+
+export interface FollowUpRequest {
+  session_id: string;
+  question_id: string;
+  transcript: string;
+  depth?: FollowUpDepth;
+  track: TrackType;
+  category: string;
+  level: DifficultyLevel;
+}
+
+export interface FollowUpResponse {
+  session_id: string;
+  parent_question_id: string;
+  follow_up_id: string;
+  follow_up_question: string;
+  depth: FollowUpDepth;
+  rationale: string;
+  suggested_answer_direction: string;
+}

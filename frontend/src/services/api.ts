@@ -8,7 +8,9 @@ import type {
   SubmitAnswerResponse,
   EndSessionResponse,
   SpeechTelemetrySnapshot,
-  SpeechTelemetryResponse
+  SpeechTelemetryResponse,
+  FollowUpRequest,
+  FollowUpResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -158,4 +160,20 @@ export async function submitSpeechTelemetry(
   } catch {
     return null;
   }
+}
+
+// ── Feature 3: Multi-Turn Follow-Up & Probing Engine ─────────────────────────
+
+export async function requestFollowUpQuestion(
+  req: FollowUpRequest
+): Promise<FollowUpResponse> {
+  const response = await fetch(`${API_BASE}/api/interview/follow-up`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req)
+  });
+  if (!response.ok) {
+    throw new Error('Failed to generate follow-up question');
+  }
+  return response.json();
 }
