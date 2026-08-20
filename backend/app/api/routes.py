@@ -33,11 +33,12 @@ async def get_tracks_and_categories() -> Dict[str, Any]:
                 "name": "Technical Interview",
                 "description": "Deep-dive technical questions covering architecture, debugging, tradeoffs, and system design.",
                 "categories": [
-                    {"id": "Frontend Engineer", "name": "Frontend Engineer", "description": "React, TypeScript, Web Vitals, browser architecture, state management."},
-                    {"id": "Backend Engineer", "name": "Backend Engineer", "description": "APIs, databases, concurrency, distributed systems, caching."},
-                    {"id": "Fullstack Engineer", "name": "Fullstack Engineer", "description": "End-to-end web architecture, data flow, API contracts, security."},
-                    {"id": "System Design", "name": "System Design", "description": "High scalability, distributed rate limiters, caching strategies, microservices."},
-                    {"id": "Data Structures & Algorithms", "name": "Data Structures & Algorithms", "description": "Conceptual time/space complexity, algorithmic tradeoffs, tree/graph traversal."}
+                    {"id": "Frontend Engineer", "name": "Frontend Engineer", "description": "React, TypeScript, Web Vitals, and state management architecture."},
+                    {"id": "Backend Engineer", "name": "Backend Engineer", "description": "APIs, databases, concurrency, and distributed caching."},
+                    {"id": "Fullstack Engineer", "name": "Fullstack Engineer", "description": "End-to-end architecture, API contracts, and security."},
+                    {"id": "System Design", "name": "System Design", "description": "High scalability, distributed systems, and data modeling."},
+                    {"id": "Data Structures & Algorithms", "name": "Data Structures & Algorithms", "description": "Time and space complexity, data structures, and algorithmic trade-offs."},
+                    {"id": "DevOps & Cloud Infrastructure", "name": "DevOps & Cloud Infrastructure", "description": "CI/CD pipelines, Kubernetes, observability, and container orchestration."}
                 ]
             },
             {
@@ -45,9 +46,10 @@ async def get_tracks_and_categories() -> Dict[str, Any]:
                 "name": "Behavioral Interview (STAR)",
                 "description": "Evaluate leadership, communication, conflict resolution, and problem-solving through the STAR method.",
                 "categories": [
-                    {"id": "Behavioral / STAR", "name": "Standard Behavioral (STAR)", "description": "Conflict, leadership, dealing with ambiguity, overcoming failures."},
-                    {"id": "Engineering Leadership", "name": "Engineering Leadership", "description": "Mentorship, cross-functional collaboration, technical strategy, driving alignment."},
-                    {"id": "Product & Cross-Functional", "name": "Product & Cross-Functional Collaboration", "description": "Working with PMs, designers, handling trade-offs against business deadlines."}
+                    {"id": "Behavioral / STAR", "name": "Standard Behavioral (STAR)", "description": "Conflict resolution, leadership, ambiguity, and failure recovery."},
+                    {"id": "Engineering Leadership", "name": "Engineering Leadership", "description": "Mentorship, cross-functional strategy, and driving team alignment."},
+                    {"id": "Product & Cross-Functional", "name": "Product & Cross-Functional Collaboration", "description": "Partnering with product managers, design, and business stakeholders."},
+                    {"id": "Adaptability & Growth", "name": "Adaptability & Growth", "description": "Navigating fast-moving team pivots, learning curves, and technical shifts."}
                 ]
             }
         ],

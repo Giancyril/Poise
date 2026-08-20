@@ -214,9 +214,9 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-5xl w-full mx-auto py-4 border-t border-slate-900 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <span>AI Mock Interview Coach &copy; 2026</span>
-        <span className="text-violet-400/80 font-medium">Stage 6: Professional UI/UX Pass Active</span>
+      <footer className="max-w-5xl w-full mx-auto py-5 border-t border-slate-900/80 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <span>POISE &copy; 2026 · AI Mock Interview Coach</span>
+        <span className="text-slate-500">Audio processed in-memory · Zero persistent storage</span>
       </footer>
     </div>
   );

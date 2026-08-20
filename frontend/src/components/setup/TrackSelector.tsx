@@ -6,7 +6,8 @@ import {
   Layers,
   BarChart2,
   Briefcase,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import type {
   TrackType,
@@ -28,10 +29,12 @@ const FALLBACK_TRACKS: TrackOption[] = [
     name: 'Technical Interview',
     description: 'Architecture, trade-offs, debugging, and system design.',
     categories: [
-      { id: 'Frontend Engineer', name: 'Frontend Engineer', description: 'React, TypeScript, Web Vitals, state management.' },
-      { id: 'Backend Engineer', name: 'Backend Engineer', description: 'APIs, databases, concurrency, caching.' },
-      { id: 'System Design', name: 'System Design', description: 'Scalability, microservices, data modeling.' },
-      { id: 'Algorithms & Data Structures', name: 'Algorithms & DS', description: 'Problem-solving, complexity, optimization.' }
+      { id: 'Frontend Engineer', name: 'Frontend Engineer', description: 'React, TypeScript, Web Vitals, and state management architecture.' },
+      { id: 'Backend Engineer', name: 'Backend Engineer', description: 'APIs, databases, concurrency, and distributed caching.' },
+      { id: 'Fullstack Engineer', name: 'Fullstack Engineer', description: 'End-to-end architecture, API contracts, and security.' },
+      { id: 'System Design', name: 'System Design', description: 'High scalability, distributed systems, and data modeling.' },
+      { id: 'Data Structures & Algorithms', name: 'Data Structures & Algorithms', description: 'Time and space complexity, data structures, and algorithmic trade-offs.' },
+      { id: 'DevOps & Cloud Infrastructure', name: 'DevOps & Cloud Infrastructure', description: 'CI/CD pipelines, Kubernetes, observability, and container orchestration.' }
     ]
   },
   {
@@ -39,8 +42,10 @@ const FALLBACK_TRACKS: TrackOption[] = [
     name: 'Behavioral Interview (STAR)',
     description: 'Leadership, communication, conflict, and impact.',
     categories: [
-      { id: 'Behavioral / STAR', name: 'Standard Behavioral', description: 'Conflict, leadership, ambiguity, failure & learning.' },
-      { id: 'Engineering Leadership', name: 'Engineering Leadership', description: 'Mentorship, cross-functional collaboration, strategy.' }
+      { id: 'Behavioral / STAR', name: 'Standard Behavioral (STAR)', description: 'Conflict resolution, leadership, ambiguity, and failure recovery.' },
+      { id: 'Engineering Leadership', name: 'Engineering Leadership', description: 'Mentorship, cross-functional strategy, and driving team alignment.' },
+      { id: 'Product & Cross-Functional', name: 'Product & Cross-Functional Collaboration', description: 'Partnering with product managers, design, and business stakeholders.' },
+      { id: 'Adaptability & Growth', name: 'Adaptability & Growth', description: 'Navigating fast-moving team pivots, learning curves, and technical shifts.' }
     ]
   }
 ];
@@ -95,13 +100,21 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6 animate-fadeSlideUp relative z-10">
-      {/* ── Hero Heading ── */}
-      <div className="text-center space-y-3 pb-2">
+      {/* ── Hero Heading & Trust Chip ── */}
+      <div className="text-center space-y-3 pb-1">
+        {/* Prominent Trust & Credibility Badge */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-xs font-medium shadow-xs">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Powered by OpenAI GPT-4o &amp; Whisper</span>
+          <span className="text-slate-600">·</span>
+          <span className="text-slate-400">Zero Persistent Storage</span>
+        </div>
+
         <h2 className="text-3xl sm:text-4xl font-extrabold gradient-text">
           Configure Your Session
         </h2>
         <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-          Select a practice track, your specialization, and seniority level — then speak your answers out loud for real-time AI feedback.
+          Select a practice track, your specialization, and seniority calibration — then speak your answers out loud for real-time AI feedback.
         </p>
       </div>
 
@@ -111,7 +124,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
         </div>
       )}
 
-      {/* ── 1. Track Selector ── */}
+      {/* ── 1. Track Selector Cards (Primary Choice) ── */}
       <div className="grid grid-cols-2 gap-4">
         {(['technical', 'behavioral'] as TrackType[]).map((trackId) => {
           const isActive = selectedTrack === trackId;
@@ -123,13 +136,16 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
               key={trackId}
               type="button"
               onClick={() => handleTrackChange(trackId)}
-              className={`p-5 rounded-2xl text-left border transition-all duration-250 cursor-pointer group card-lift ${isActive
-                ? 'bg-violet-950/45 border-violet-500/70 shadow-lg shadow-violet-950/40 ring-1 ring-violet-500/40'
-                : 'glass-panel-interactive border-slate-800/60 opacity-75 hover:opacity-100'
-                }`}
+              className={`p-5 rounded-2xl text-left border transition-all duration-200 cursor-pointer group card-lift ${
+                isActive
+                  ? 'bg-violet-950/40 border-violet-500/70 shadow-sm ring-1 ring-violet-500/30'
+                  : 'glass-panel-interactive border-slate-800/80 opacity-75 hover:opacity-100'
+              }`}
             >
               <div className="flex items-start space-x-3">
-                <div className={`p-2.5 rounded-xl transition-colors ${isActive ? 'bg-violet-600 text-white shadow shadow-violet-600/30' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'}`}>
+                <div className={`p-2.5 rounded-xl transition-colors ${
+                  isActive ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'
+                }`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -138,24 +154,24 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                 </div>
               </div>
               {isActive && (
-                <div className="mt-3 h-0.5 w-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-400 opacity-70" />
+                <div className="mt-3 h-0.5 w-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-400 opacity-60" />
               )}
             </button>
           );
         })}
       </div>
 
-      {/* ── 2. Category ── */}
+      {/* ── 2. Category / Role Selection (Primary Grid) ── */}
       <div className="glass-panel p-5 rounded-2xl space-y-4 animate-fadeSlideUp stagger-2">
-        <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-          <Briefcase className="w-4 h-4 text-violet-400" />
+        <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Briefcase className="w-3.5 h-3.5 text-slate-400" />
           <span>Select Role / Specialization</span>
         </label>
 
         {isLoadingTracks ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="skeleton h-14 rounded-xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="skeleton h-16 rounded-xl" />
             ))}
           </div>
         ) : (
@@ -167,13 +183,14 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`p-3.5 rounded-xl text-left border text-sm transition-all duration-200 cursor-pointer group ${isSelected
-                    ? 'bg-slate-800/90 border-violet-500/75 text-white shadow-md'
-                    : 'bg-slate-900/50 border-slate-800/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80'
-                    }`}
+                  className={`p-3.5 rounded-xl text-left border text-sm transition-all duration-150 cursor-pointer group ${
+                    isSelected
+                      ? 'bg-slate-800/95 border-violet-500/60 text-white shadow-xs ring-1 ring-violet-500/20'
+                      : 'bg-slate-900/50 border-slate-800/70 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80'
+                  }`}
                 >
                   <div className={`font-semibold text-sm leading-tight ${isSelected ? 'text-white' : 'text-slate-200'}`}>{cat.name}</div>
-                  <div className="text-xs text-slate-400 mt-1 leading-snug line-clamp-1">{cat.description}</div>
+                  <div className="text-xs text-slate-400 mt-1 leading-snug">{cat.description}</div>
                 </button>
               );
             })}
@@ -181,12 +198,12 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
         )}
       </div>
 
-      {/* ── 3. Level & Count ── */}
+      {/* ── 3. Seniority Level & Question Count (Secondary Segmented Controls) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeSlideUp stagger-3">
         {/* Seniority */}
         <div className="glass-panel p-5 rounded-2xl space-y-4">
-          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-            <Layers className="w-4 h-4 text-violet-400" />
+          <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <Layers className="w-3.5 h-3.5 text-slate-400" />
             <span>Seniority Level</span>
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -197,10 +214,11 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                   key={lvl.id}
                   type="button"
                   onClick={() => setSelectedLevel(lvl.id as DifficultyLevel)}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
-                    ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
-                    : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                    }`}
+                  className={`py-2 px-2 rounded-lg text-xs transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                      : 'bg-slate-900/60 border border-slate-800/80 text-slate-400 font-medium hover:text-slate-200 hover:bg-slate-800/50 hover:border-slate-700'
+                  }`}
                 >
                   {lvl.name}
                 </button>
@@ -216,8 +234,8 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
 
         {/* Question count */}
         <div className="glass-panel p-5 rounded-2xl space-y-4">
-          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-            <BarChart2 className="w-4 h-4 text-violet-400" />
+          <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <BarChart2 className="w-3.5 h-3.5 text-slate-400" />
             <span>Session Length</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -228,10 +246,11 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
                   key={num}
                   type="button"
                   onClick={() => setTotalQuestions(num)}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
-                    ? 'bg-violet-600 text-white shadow shadow-violet-600/30 ring-1 ring-violet-500/40'
-                    : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                    }`}
+                  className={`py-2 rounded-lg text-xs transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                      : 'bg-slate-900/60 border border-slate-800/80 text-slate-400 font-medium hover:text-slate-200 hover:bg-slate-800/50 hover:border-slate-700'
+                  }`}
                 >
                   {num} Questions
                 </button>
@@ -250,7 +269,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
           type="button"
           onClick={handleStart}
           disabled={isLoading || !selectedCategory}
-          className="btn-primary w-full py-4 text-base"
+          className="btn-primary w-full py-3.5 text-base"
         >
           {isLoading ? (
             <>
@@ -264,9 +283,6 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
             </>
           )}
         </button>
-        <p className="text-center text-xs text-slate-500 mt-3">
-          Powered by OpenAI GPT-4o + Whisper · Your answers are never stored
-        </p>
       </div>
     </div>
   );
