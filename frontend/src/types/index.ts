@@ -1,5 +1,12 @@
 export type TrackType = 'technical' | 'behavioral';
 export type DifficultyLevel = 'junior' | 'mid' | 'senior';
+export type TTSVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+
+export interface TTSRequest {
+  text: string;
+  voice?: TTSVoice;
+  speed?: number;
+}
 
 export interface QuestionCategory {
   id: string;

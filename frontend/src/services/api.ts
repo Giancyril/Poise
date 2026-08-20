@@ -108,3 +108,34 @@ export async function endInterviewSession(sessionId: string): Promise<EndSession
   }
   return response.json();
 }
+
+export async function synthesizeSpeechAudio(
+  text: string,
+  voice: string = 'nova',
+  speed: number = 1.0
+): Promise<{ audioBlob: Blob | null; fallbackToBrowser: boolean }> {
+  try {
+    const response = await fetch(`${API_BASE}/api/interview/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice, speed })
+    });
+
+    if (!response.ok) {
+      return { audioBlob: null, fallbackToBrowser: true };
+    }
+
+    if (response.headers.get('X-TTS-Fallback') === 'browser') {
+      return { audioBlob: null, fallbackToBrowser: true };
+    }
+
+    const blob = await response.blob();
+    if (blob.size < 100) {
+      return { audioBlob: null, fallbackToBrowser: true };
+    }
+
+    return { audioBlob: blob, fallbackToBrowser: false };
+  } catch {
+    return { audioBlob: null, fallbackToBrowser: true };
+  }
+}
