@@ -4,7 +4,8 @@ import type {
   StartSessionRequest,
   StartSessionResponse,
   NextQuestionResponse,
-  TranscribeAudioResponse
+  TranscribeAudioResponse,
+  SubmitAnswerResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -70,6 +71,40 @@ export async function transcribeAudio(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Audio transcription request failed');
+  }
+
+  return response.json();
+}
+
+export async function submitAndEvaluateAnswer(
+  params: {
+    audioBlob?: Blob | null;
+    transcript?: string | null;
+    sessionId: string;
+    questionId: string;
+    durationSeconds: number;
+  }
+): Promise<SubmitAnswerResponse> {
+  const formData = new FormData();
+  formData.append('session_id', params.sessionId);
+  formData.append('question_id', params.questionId);
+  formData.append('duration_seconds', params.durationSeconds.toString());
+
+  if (params.audioBlob) {
+    formData.append('file', params.audioBlob, 'recording.webm');
+  }
+  if (params.transcript) {
+    formData.append('transcript', params.transcript);
+  }
+
+  const response = await fetch(`${API_BASE}/api/interview/answer`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to evaluate answer');
   }
 
   return response.json();

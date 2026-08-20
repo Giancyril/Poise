@@ -30,6 +30,38 @@ export interface Question {
   key_evaluation_criteria?: string[];
 }
 
+export interface FillerWordStat {
+  word: string;
+  count: number;
+}
+
+export interface DeliveryMetrics {
+  words_per_minute: number;
+  pacing_assessment: string;
+  filler_word_count: number;
+  filler_words: FillerWordStat[];
+  total_words: number;
+  average_words_per_sentence: number;
+}
+
+export interface FeedbackScoreBreakdown {
+  overall_score: number;
+  content_score: number;
+  clarity_score: number;
+  delivery_score: number;
+}
+
+export interface FeedbackResponse {
+  question_id: string;
+  transcript: string;
+  duration_seconds: number;
+  scores: FeedbackScoreBreakdown;
+  delivery_metrics: DeliveryMetrics;
+  strengths: string[];
+  improvements: string[];
+  rewritten_snippet: string;
+}
+
 export interface StartSessionRequest {
   track: TrackType;
   category: string;
@@ -62,4 +94,12 @@ export interface TranscribeAudioResponse {
   duration_seconds: number;
   success: boolean;
   error?: string | null;
+}
+
+export interface SubmitAnswerResponse {
+  session_id: string;
+  question_id: string;
+  feedback: FeedbackResponse;
+  next_question: Question | null;
+  is_session_complete: boolean;
 }

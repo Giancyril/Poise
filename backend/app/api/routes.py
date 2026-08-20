@@ -8,11 +8,14 @@ from app.models.schemas import (
     NextQuestionRequest,
     NextQuestionResponse,
     TranscribeAudioResponse,
+    SubmitAnswerResponse,
+    FeedbackResponse,
     SessionState
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
 from app.services.whisper_service import whisper_service
+from app.services.delivery_service import delivery_service
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
@@ -166,6 +169,90 @@ async def transcribe_audio_answer(
         duration_seconds=duration_seconds,
         success=True,
         error=None
+    )
+
+@router.post("/answer", response_model=SubmitAnswerResponse)
+async def submit_and_evaluate_answer(
+    file: Optional[UploadFile] = File(None),
+    session_id: str = Form(...),
+    question_id: str = Form(...),
+    duration_seconds: float = Form(0.0),
+    transcript: Optional[str] = Form(None)
+):
+    """
+    Receives spoken audio or transcript, transcribes if needed, runs delivery heuristics,
+    evaluates response with LLM rubric, and returns structured feedback.
+    """
+    session = session_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+
+    # 1. Obtain transcript
+    final_transcript = (transcript or "").strip()
+    if file is not None and not final_transcript:
+        audio_bytes = await file.read()
+        transcribed_text, error = await whisper_service.transcribe_audio(
+            audio_bytes=audio_bytes,
+            filename=file.filename or "recording.webm",
+            duration_seconds=duration_seconds
+        )
+        if error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error
+            )
+        final_transcript = transcribed_text
+
+    if not final_transcript:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty answer received. Please speak or provide a response."
+        )
+
+    # 2. Find target question
+    current_q = next((q for q in session.asked_questions if q.id == question_id), None)
+    if not current_q:
+        current_q = session.asked_questions[-1] if session.asked_questions else None
+        if not current_q:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No question found for this answer"
+            )
+
+    # 3. Delivery Analysis
+    delivery_metrics = delivery_service.analyze_delivery(
+        transcript=final_transcript,
+        duration_seconds=duration_seconds
+    )
+
+    # 4. LLM Feedback Evaluation
+    feedback = await llm_service.evaluate_response(
+        question=current_q,
+        transcript=final_transcript,
+        duration_seconds=duration_seconds,
+        delivery_metrics=delivery_metrics
+    )
+
+    # 5. Record answer in session
+    session_manager.record_answer(
+        session_id=session_id,
+        question_id=question_id,
+        transcript=final_transcript,
+        duration_seconds=duration_seconds,
+        feedback=feedback
+    )
+
+    is_complete = session.current_question_index >= session.total_questions
+
+    return SubmitAnswerResponse(
+        session_id=session_id,
+        question_id=question_id,
+        feedback=feedback,
+        next_question=None,
+        is_session_complete=is_complete
     )
 
 @router.get("/session/{session_id}", response_model=SessionState)

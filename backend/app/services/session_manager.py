@@ -1,11 +1,10 @@
 import uuid
 from typing import Dict, Optional, List
-from app.models.schemas import SessionState, Question, TrackType, DifficultyLevel
+from app.models.schemas import SessionState, Question, TrackType, DifficultyLevel, AnswerRecord, FeedbackResponse
 
 class SessionManager:
     """
     In-memory session manager for managing practice interview sessions.
-    Designed with a clean interface so it can be swapped with Redis / SQLite / Postgres in v2.
     """
     def __init__(self):
         self._sessions: Dict[str, SessionState] = {}
@@ -25,7 +24,8 @@ class SessionManager:
             level=level,
             total_questions=total_questions,
             current_question_index=1,
-            asked_questions=[]
+            asked_questions=[],
+            answers=[]
         )
         self._sessions[session_id] = session
         return session
@@ -39,6 +39,39 @@ class SessionManager:
             return None
         session.asked_questions.append(question)
         return session
+
+    def record_answer(
+        self,
+        session_id: str,
+        question_id: str,
+        transcript: str,
+        duration_seconds: float,
+        feedback: FeedbackResponse
+    ) -> Optional[AnswerRecord]:
+        session = self.get_session(session_id)
+        if not session:
+            return None
+        
+        # Find question
+        question = next((q for q in session.asked_questions if q.id == question_id), None)
+        if not question:
+            # Create placeholder if not found
+            question = Question(
+                id=question_id,
+                text="Interview Question",
+                track=session.track,
+                category=session.category,
+                level=session.level
+            )
+
+        record = AnswerRecord(
+            question=question,
+            transcript=transcript,
+            duration_seconds=duration_seconds,
+            feedback=feedback
+        )
+        session.answers.append(record)
+        return record
 
     def advance_session(self, session_id: str) -> Optional[SessionState]:
         session = self.get_session(session_id)

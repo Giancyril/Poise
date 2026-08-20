@@ -1,5 +1,5 @@
-from typing import List
-from app.models.schemas import TrackType, DifficultyLevel
+from typing import List, Optional
+from app.models.schemas import TrackType, DifficultyLevel, Question
 
 QUESTION_GEN_SYSTEM_PROMPT = """You are an expert technical interviewer and hiring manager at a top tech company (like Stripe, Google, Meta, or OpenAI).
 Your role is to conduct high-signal, realistic mock interviews.
@@ -42,6 +42,74 @@ Generate a new, distinct question. Respond ONLY with a valid JSON object matchin
 }
 """
     return prompt
+
+
+# ----------------------------------------------------
+# Feedback & Evaluation Prompts
+# ----------------------------------------------------
+
+EVALUATION_SYSTEM_PROMPT = """You are a seasoned Principal Engineer and Senior Hiring Director at a tier-1 technology company.
+You are evaluating a candidate's spoken interview response.
+
+Your coaching philosophy:
+1. Be direct, constructive, and highly specific. Avoid hollow platitudes ("Good job", "Needs work").
+2. Reference concrete points or exact phrases the candidate actually mentioned.
+3. For TECHNICAL questions:
+   - Check factual correctness and depth of technical reasoning.
+   - Evaluate whether trade-offs (performance, complexity, maintainability, edge cases) were articulated.
+4. For BEHAVIORAL questions:
+   - Evaluate completeness along the STAR method (Situation, Task, Action, Result).
+   - Check if the candidate emphasized their personal ownership and measurable impact vs. speaking vaguely on behalf of "the team".
+5. Calibrate scores honestly according to seniority (Junior vs. Mid vs. Senior):
+   - 90-100: Exceptional, staff-level clarity, immediate hire.
+   - 75-89: Solid, hireable response with minor polish opportunities.
+   - 60-74: Acceptable baseline, but missed important trade-offs or structure.
+   - Below 60: Unclear, factually flawed, or evaded the core question.
+6. Provide an "exemplary rewritten snippet": Rewrite the candidate's weakest paragraph into a polished, crisp, high-signal response demonstrating how a top candidate would answer.
+7. Return strictly a JSON object matching the requested schema.
+"""
+
+def build_feedback_user_prompt(
+    question: Question,
+    transcript: str,
+    duration_seconds: float,
+    filler_word_count: int,
+    wpm: int
+) -> str:
+    return f"""Evaluate the candidate's spoken response below:
+
+---
+INTERVIEW CONTEXT:
+- Track: {question.track.value.upper()}
+- Specialization: {question.category}
+- Seniority Level: {question.level.value.upper()}
+- Question Asked: "{question.text}"
+- Evaluation Rubric & Key Criteria: {", ".join(question.key_evaluation_criteria or ['Clear technical explanation', 'Trade-off analysis'])}
+
+CANDIDATE'S SPOKEN RESPONSE:
+- Spoken Transcript: "{transcript}"
+- Speaking Duration: {duration_seconds:.1f} seconds
+- Speaking Cadence: {wpm} Words Per Minute
+- Detected Filler Words: {filler_word_count}
+
+---
+Respond ONLY with a valid JSON object matching this exact schema:
+{{
+  "overall_score": 85,
+  "content_score": 88,
+  "clarity_score": 82,
+  "delivery_score": 80,
+  "strengths": [
+    "Specific strength referencing candidate's exact point 1",
+    "Specific strength referencing candidate's exact point 2"
+  ],
+  "improvements": [
+    "Specific, actionable growth recommendation 1",
+    "Specific, actionable growth recommendation 2"
+  ],
+  "rewritten_snippet": "A concise 2-3 sentence demonstration of how a top candidate would rephrase the weakest part of this answer with maximum technical signal."
+}}
+"""
 
 # Curated fallback catalog for offline tests / zero-key testing
 FALLBACK_QUESTIONS = {

@@ -26,11 +26,39 @@ class Question(BaseModel):
     hints: Optional[List[str]] = Field(default_factory=list)
     key_evaluation_criteria: Optional[List[str]] = Field(default_factory=list)
 
-class StartSessionRequest(BaseModel):
-    track: TrackType = Field(default=TrackType.TECHNICAL, description="Technical or Behavioral track")
-    category: str = Field(default="Frontend Engineer", description="Target role or topic (e.g. Frontend Engineer, System Design, Behavioral/STAR)")
-    level: DifficultyLevel = Field(default=DifficultyLevel.MID, description="Seniority level (junior, mid, senior)")
-    total_questions: int = Field(default=5, ge=1, le=10, description="Total questions for this session")
+class FillerWordStat(BaseModel):
+    word: str
+    count: int
+
+class DeliveryMetrics(BaseModel):
+    words_per_minute: int
+    pacing_assessment: str
+    filler_word_count: int
+    filler_words: List[FillerWordStat] = Field(default_factory=list)
+    total_words: int
+    average_words_per_sentence: float
+
+class FeedbackScoreBreakdown(BaseModel):
+    overall_score: int = Field(..., ge=0, le=100, description="Overall performance score (0-100)")
+    content_score: int = Field(..., ge=0, le=100, description="Technical correctness or STAR completeness (0-100)")
+    clarity_score: int = Field(..., ge=0, le=100, description="Structure, logic flow, and conciseness (0-100)")
+    delivery_score: int = Field(..., ge=0, le=100, description="Pacing and vocal composure (0-100)")
+
+class FeedbackResponse(BaseModel):
+    question_id: str
+    transcript: str
+    duration_seconds: float
+    scores: FeedbackScoreBreakdown
+    delivery_metrics: DeliveryMetrics
+    strengths: List[str] = Field(..., description="2-3 specific things the candidate articulated well")
+    improvements: List[str] = Field(..., description="2-3 high-leverage growth areas")
+    rewritten_snippet: str = Field(..., description="A concrete 2-3 sentence demonstration of how a top candidate would rephrase the weakest part")
+
+class AnswerRecord(BaseModel):
+    question: Question
+    transcript: str
+    duration_seconds: float
+    feedback: FeedbackResponse
 
 class SessionState(BaseModel):
     session_id: str
@@ -40,7 +68,14 @@ class SessionState(BaseModel):
     total_questions: int
     current_question_index: int = 1
     asked_questions: List[Question] = Field(default_factory=list)
+    answers: List[AnswerRecord] = Field(default_factory=list)
     is_completed: bool = False
+
+class StartSessionRequest(BaseModel):
+    track: TrackType = Field(default=TrackType.TECHNICAL, description="Technical or Behavioral track")
+    category: str = Field(default="Frontend Engineer", description="Target role or topic")
+    level: DifficultyLevel = Field(default=DifficultyLevel.MID, description="Seniority level")
+    total_questions: int = Field(default=5, ge=1, le=10, description="Total questions for session")
 
 class StartSessionResponse(BaseModel):
     session_id: str
@@ -68,3 +103,10 @@ class TranscribeAudioResponse(BaseModel):
     duration_seconds: float
     success: bool
     error: Optional[str] = None
+
+class SubmitAnswerResponse(BaseModel):
+    session_id: str
+    question_id: str
+    feedback: FeedbackResponse
+    next_question: Optional[Question] = None
+    is_session_complete: bool

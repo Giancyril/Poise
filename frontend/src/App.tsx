@@ -3,9 +3,10 @@ import { Mic, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 import type {
   StartSessionRequest,
   StartSessionResponse,
-  Question
+  Question,
+  FeedbackResponse
 } from './types';
-import { startInterviewSession, getNextQuestion, transcribeAudio } from './services/api';
+import { startInterviewSession, getNextQuestion, submitAndEvaluateAnswer } from './services/api';
 import { TrackSelector } from './components/setup/TrackSelector';
 import { QuestionDisplay } from './components/interview/QuestionDisplay';
 
@@ -16,8 +17,8 @@ export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<AppStep>('setup');
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
 
   // Active Session State
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -51,27 +52,28 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleAudioSubmitted = async (audioBlob: Blob, durationSeconds: number): Promise<string | null> => {
+  const handleAnswerSubmitted = async (params: {
+    audioBlob?: Blob | null;
+    transcript?: string | null;
+    durationSeconds: number;
+  }): Promise<FeedbackResponse | null> => {
     if (!sessionId || !currentQuestion) return null;
-    setIsTranscribing(true);
-    setTranscriptionError(null);
+    setIsEvaluating(true);
+    setEvaluationError(null);
     try {
-      const result = await transcribeAudio(
-        audioBlob,
+      const result = await submitAndEvaluateAnswer({
+        audioBlob: params.audioBlob,
+        transcript: params.transcript,
         sessionId,
-        currentQuestion.id,
-        durationSeconds
-      );
-      if (!result.success || result.error) {
-        setTranscriptionError(result.error || 'Transcription was empty or unclear.');
-        return null;
-      }
-      return result.transcript;
+        questionId: currentQuestion.id,
+        durationSeconds: params.durationSeconds
+      });
+      return result.feedback;
     } catch (err: any) {
-      setTranscriptionError(err.message || 'Failed to transcribe audio.');
+      setEvaluationError(err.message || 'Failed to evaluate answer.');
       return null;
     } finally {
-      setIsTranscribing(false);
+      setIsEvaluating(false);
     }
   };
 
@@ -79,7 +81,7 @@ export const App: React.FC = () => {
     if (!sessionId) return;
     setIsLoadingNext(true);
     setErrorMessage(null);
-    setTranscriptionError(null);
+    setEvaluationError(null);
     try {
       const response = await getNextQuestion(sessionId);
       if (response.is_completed || !response.question) {
@@ -99,7 +101,7 @@ export const App: React.FC = () => {
     setSessionId(null);
     setCurrentQuestion(null);
     setCurrentIndex(1);
-    setTranscriptionError(null);
+    setEvaluationError(null);
     setCurrentStep('setup');
   };
 
@@ -164,9 +166,9 @@ export const App: React.FC = () => {
             totalQuestions={totalQuestions}
             onNextQuestion={handleNextQuestion}
             onEndSession={handleResetSession}
-            onAudioSubmitted={handleAudioSubmitted}
-            isTranscribing={isTranscribing}
-            transcriptionError={transcriptionError}
+            onAnswerSubmitted={handleAnswerSubmitted}
+            isEvaluating={isEvaluating}
+            evaluationError={evaluationError}
             isLoadingNext={isLoadingNext}
           />
         )}
@@ -177,18 +179,18 @@ export const App: React.FC = () => {
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Interview Session Completed!</h2>
+              <h2 className="text-2xl font-bold text-white">Interview Practice Completed!</h2>
               <p className="text-sm text-slate-400 mt-2">
-                You completed practicing with voice audio across all {totalQuestions} questions.
+                You successfully answered and received AI coaching on all {totalQuestions} questions.
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 text-left space-y-2">
               <div className="font-semibold text-violet-400 flex items-center space-x-1">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Next up in Stage 4:</span>
+                <span>Next up in Stage 5:</span>
               </div>
               <p className="text-slate-400">
-                Detailed structured feedback (scores, strengths, improvements, rewritten snippet) + delivery analytics (filler words, WPM).
+                End-of-session aggregate performance dashboard (overall trends, recurring strengths/weaknesses, and post-workout summary).
               </p>
             </div>
             <button
@@ -206,7 +208,7 @@ export const App: React.FC = () => {
       {/* Footer */}
       <footer className="max-w-5xl w-full mx-auto py-4 border-t border-slate-900 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <span>AI Mock Interview Coach &copy; 2026</span>
-        <span className="text-violet-400/80">Stage 3: Whisper Voice Pipeline Active</span>
+        <span className="text-violet-400/80">Stage 4: Structured Feedback & Delivery Analytics Active</span>
       </footer>
     </div>
   );
