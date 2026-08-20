@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     WHISPER_MODEL: str = os.getenv("WHISPER_MODEL", "whisper-1")
+    MAX_AUDIO_UPLOAD_SIZE_MB: int = int(os.getenv("MAX_AUDIO_UPLOAD_SIZE_MB", "25"))
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
