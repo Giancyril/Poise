@@ -22,6 +22,7 @@ interface FeedbackCardProps {
   feedback: FeedbackResponse;
   onNextQuestion: () => void;
   onReRecord: () => void;
+  onDrillDown?: () => void;
   isLoadingNext: boolean;
   isLastQuestion: boolean;
 }
@@ -30,6 +31,7 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
   feedback,
   onNextQuestion,
   onReRecord,
+  onDrillDown,
   isLoadingNext,
   isLastQuestion
 }) => {
@@ -200,15 +202,28 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
       </div>
 
       {/* ── 6. Actions ── */}
-      <div className="flex items-center justify-between pt-1 gap-3">
-        <button
-          type="button"
-          onClick={onReRecord}
-          className="btn-secondary"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Re-try Question</span>
-        </button>
+      <div className="flex flex-wrap items-center justify-between pt-1 gap-3">
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={onReRecord}
+            className="btn-secondary"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Re-try</span>
+          </button>
+
+          {onDrillDown && (
+            <button
+              type="button"
+              onClick={onDrillDown}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-violet-950/60 hover:bg-violet-900/60 border border-violet-800/60 text-violet-300 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+              <span>Drill Deeper (Follow-Up)</span>
+            </button>
+          )}
+        </div>
 
         <button
           type="button"

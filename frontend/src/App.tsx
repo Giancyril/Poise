@@ -180,6 +180,7 @@ export const App: React.FC = () => {
             question={currentQuestion}
             currentIndex={currentIndex}
             totalQuestions={totalQuestions}
+            sessionId={sessionId || undefined}
             onNextQuestion={handleNextQuestion}
             onEndSession={handleResetSession}
             onAnswerSubmitted={handleAnswerSubmitted}

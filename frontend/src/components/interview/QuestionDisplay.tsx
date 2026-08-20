@@ -8,16 +8,18 @@ import {
   Mic,
   Loader2
 } from 'lucide-react';
-import type { Question, FeedbackResponse } from '../../types';
+import type { Question, FeedbackResponse, FollowUpResponse } from '../../types';
 import { AudioRecorder } from './AudioRecorder';
 import { FeedbackCard } from './FeedbackCard';
 import { InterviewerVoiceAvatar } from './InterviewerVoiceAvatar';
+import { FollowUpModal } from './FollowUpModal';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 
 interface QuestionDisplayProps {
   question: Question;
   currentIndex: number;
   totalQuestions: number;
+  sessionId?: string;
   onNextQuestion: () => void;
   onEndSession: () => void;
   onAnswerSubmitted: (params: {
@@ -38,15 +40,25 @@ const LEVEL_BADGE: Record<string, string> = {
 };
 
 export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
-  question, currentIndex, totalQuestions,
+  question, currentIndex, totalQuestions, sessionId = 'active-session',
   onNextQuestion, onEndSession, onAnswerSubmitted,
   isEvaluating, evaluationError, isLoadingNext,
   autoSpeak = false
 }) => {
+  const [activeQuestion, setActiveQuestion] = useState<Question>(question);
   const [showHints, setShowHints] = useState(false);
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textAnswer, setTextAnswer] = useState('');
   const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
+  const [isFollowUpActive, setIsFollowUpActive] = useState(false);
+
+  useEffect(() => {
+    setActiveQuestion(question);
+    setIsFollowUpActive(false);
+    setFeedback(null);
+    setTextAnswer('');
+  }, [question.id]);
 
   const {
     isPlaying: isVoicePlaying,
@@ -59,13 +71,13 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   } = useAudioPlayer();
 
   useEffect(() => {
-    if (autoSpeak && question?.text) {
-      speak(question.text);
+    if (autoSpeak && activeQuestion?.text) {
+      speak(activeQuestion.text);
     }
     return () => {
       stopVoice();
     };
-  }, [question?.id, autoSpeak]);
+  }, [activeQuestion?.id, autoSpeak]);
 
   const handleAudioComplete = async (blob: Blob, durationSeconds: number) => {
     stopVoice();
@@ -89,11 +101,28 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     setFeedback(null);
     setTextAnswer('');
     setShowHints(false);
+    setIsFollowUpActive(false);
     onNextQuestion();
   };
 
+  const handleAcceptFollowUp = (fu: FollowUpResponse) => {
+    stopVoice();
+    setActiveQuestion({
+      id: fu.follow_up_id,
+      text: fu.follow_up_question,
+      track: question.track,
+      category: question.category,
+      level: question.level,
+      hints: fu.suggested_answer_direction ? [fu.suggested_answer_direction] : []
+    });
+    setIsFollowUpActive(true);
+    setFeedback(null);
+    setTextAnswer('');
+    setShowHints(false);
+  };
+
   const handlePlayVoice = () => {
-    speak(question.text);
+    speak(activeQuestion.text);
   };
 
   const handlePauseVoice = () => {
@@ -101,7 +130,7 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   };
 
   const handleReplayVoice = () => {
-    speak(question.text);
+    speak(activeQuestion.text);
   };
 
   const progressPct = Math.round(((currentIndex - 1) / totalQuestions) * 100);
@@ -126,6 +155,9 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         <div className="flex flex-col items-end gap-1.5">
           <span className="text-xs font-semibold text-slate-400">
             Question <span className="text-slate-200">{currentIndex}</span> of <span className="text-slate-200">{totalQuestions}</span>
+            {isFollowUpActive && (
+              <span className="ml-2 text-violet-400 font-bold">· Follow-Up Drill</span>
+            )}
           </span>
           <div className="flex items-center gap-1.5">
             {Array.from({ length: totalQuestions }).map((_, idx) => (
@@ -156,12 +188,17 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
         {/* Badges row */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="badge badge-slate">{question.category}</span>
-          <span className={LEVEL_BADGE[question.level] || 'badge badge-slate'}>
-            {question.level} Level
+          {isFollowUpActive && (
+            <span className="badge bg-purple-950/80 border-purple-700/60 text-purple-300 font-bold animate-pulse">
+              Follow-Up Probe
+            </span>
+          )}
+          <span className="badge badge-slate">{activeQuestion.category}</span>
+          <span className={LEVEL_BADGE[activeQuestion.level] || 'badge badge-slate'}>
+            {activeQuestion.level} Level
           </span>
           <span className="badge badge-violet">
-            {question.track === 'technical' ? 'Technical' : 'STAR Behavioral'}
+            {activeQuestion.track === 'technical' ? 'Technical' : 'STAR Behavioral'}
           </span>
         </div>
 
@@ -171,7 +208,7 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
             <MessageSquareQuote className="w-4 h-4 text-violet-400" />
           </div>
           <h3 className="text-xl sm:text-2xl font-bold text-white leading-relaxed tracking-tight">
-            "{question.text}"
+            "{activeQuestion.text}"
           </h3>
         </div>
 
@@ -188,7 +225,7 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         )}
 
         {/* Hints */}
-        {question.hints && question.hints.length > 0 && (
+        {activeQuestion.hints && activeQuestion.hints.length > 0 && (
           <div className="pt-1">
             <button
               type="button"
@@ -205,7 +242,7 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                   <Sparkles className="w-3 h-3" /> Consider addressing:
                 </div>
                 <ul className="space-y-1.5">
-                  {question.hints.map((hint, i) => (
+                  {activeQuestion.hints.map((hint, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-violet-500/70 mt-1.5 flex-shrink-0" />
                       <span className="text-slate-300">{hint}</span>
@@ -225,6 +262,7 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
             feedback={feedback}
             onNextQuestion={handleNext}
             onReRecord={handleReRecord}
+            onDrillDown={() => setIsFollowUpOpen(true)}
             isLoadingNext={isLoadingNext}
             isLastQuestion={currentIndex >= totalQuestions}
           />
@@ -307,6 +345,21 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Drill-Down Follow-Up Modal ── */}
+      {feedback && (
+        <FollowUpModal
+          isOpen={isFollowUpOpen}
+          onClose={() => setIsFollowUpOpen(false)}
+          sessionId={sessionId}
+          questionId={activeQuestion.id}
+          transcript={feedback.transcript}
+          track={activeQuestion.track}
+          category={activeQuestion.category}
+          level={activeQuestion.level}
+          onAcceptFollowUp={handleAcceptFollowUp}
+        />
       )}
     </div>
   );
