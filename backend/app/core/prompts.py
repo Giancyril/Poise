@@ -1,5 +1,5 @@
 from typing import List, Optional
-from app.models.schemas import TrackType, DifficultyLevel, Question
+from app.models.schemas import TrackType, DifficultyLevel, Question, AnswerRecord
 
 QUESTION_GEN_SYSTEM_PROMPT = """You are an expert technical interviewer and hiring manager at a top tech company (like Stripe, Google, Meta, or OpenAI).
 Your role is to conduct high-signal, realistic mock interviews.
@@ -108,6 +108,62 @@ Respond ONLY with a valid JSON object matching this exact schema:
     "Specific, actionable growth recommendation 2"
   ],
   "rewritten_snippet": "A concise 2-3 sentence demonstration of how a top candidate would rephrase the weakest part of this answer with maximum technical signal."
+}}
+"""
+
+
+# ----------------------------------------------------
+# End-of-Session Summary Prompt
+# ----------------------------------------------------
+
+SESSION_SUMMARY_SYSTEM_PROMPT = """You are a Principal Engineering Career Coach creating an end-of-session performance summary (like an encouraging post-workout athletic debrief).
+You review the candidate's complete multi-question practice session and synthesize patterns across all answers.
+
+Guidelines:
+1. Identify 2-3 recurring patterns of strength demonstrated across multiple answers.
+2. Identify 2-3 recurring blind spots or growth areas that appeared repeatedly.
+3. Formulate one high-impact "Recommended Focus Goal" for their next mock interview session.
+4. Keep the tone inspiring, direct, and actionable.
+5. Return strictly a JSON object matching the requested schema.
+"""
+
+def build_session_summary_user_prompt(
+    track: TrackType,
+    category: str,
+    level: DifficultyLevel,
+    answers: List[AnswerRecord]
+) -> str:
+    session_data_text = ""
+    for i, a in enumerate(answers, 1):
+        session_data_text += f"""
+Question {i}: "{a.question.text}"
+- Candidate Answer: "{a.transcript}"
+- Scores: Overall={a.feedback.scores.overall_score}, Content={a.feedback.scores.content_score}, Clarity={a.feedback.scores.clarity_score}, Delivery={a.feedback.scores.delivery_score}
+- Strengths noted: {"; ".join(a.feedback.strengths)}
+- Improvements noted: {"; ".join(a.feedback.improvements)}
+"""
+
+    return f"""Synthesize the complete practice interview session below:
+
+- Track: {track.value.upper()}
+- Target Category: {category}
+- Seniority Level: {level.value.upper()}
+- Total Questions Answered: {len(answers)}
+
+{session_data_text}
+
+---
+Respond ONLY with a valid JSON object matching this schema:
+{{
+  "recurring_strengths": [
+    "Recurring cross-question strength 1",
+    "Recurring cross-question strength 2"
+  ],
+  "recurring_growth_areas": [
+    "Recurring cross-question blind spot 1",
+    "Recurring cross-question blind spot 2"
+  ],
+  "recommended_focus_area": "A single inspiring, concrete directive on what the candidate should focus on mastering in their next practice round."
 }}
 """
 

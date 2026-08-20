@@ -9,6 +9,8 @@ from app.core.prompts import (
     build_question_gen_user_prompt,
     EVALUATION_SYSTEM_PROMPT,
     build_feedback_user_prompt,
+    SESSION_SUMMARY_SYSTEM_PROMPT,
+    build_session_summary_user_prompt,
     FALLBACK_QUESTIONS
 )
 from app.models.schemas import (
@@ -17,7 +19,10 @@ from app.models.schemas import (
     Question,
     FeedbackResponse,
     FeedbackScoreBreakdown,
-    DeliveryMetrics
+    DeliveryMetrics,
+    AnswerRecord,
+    SessionSummary,
+    SessionState
 )
 
 class LLMService:
@@ -129,6 +134,110 @@ class LLMService:
 
         return self._generate_fallback_feedback(question, transcript, duration_seconds, delivery_metrics)
 
+    async def generate_session_summary(
+        self,
+        session: SessionState
+    ) -> SessionSummary:
+        """
+        Synthesizes candidate performance across all answered questions in the session.
+        """
+        answers = session.answers
+        if not answers:
+            # Empty fallback summary
+            return SessionSummary(
+                session_id=session.session_id,
+                track=session.track,
+                category=session.category,
+                level=session.level,
+                total_questions_answered=0,
+                average_overall_score=0,
+                average_content_score=0,
+                average_clarity_score=0,
+                average_delivery_score=0,
+                average_wpm=0,
+                total_filler_words=0,
+                total_duration_seconds=0.0,
+                recurring_strengths=["Started mock interview practice."],
+                recurring_growth_areas=["Complete more questions to build data trends."],
+                recommended_focus_area="Practice recording multi-minute spoken responses out loud.",
+                question_breakdown=[]
+            )
+
+        # Statistical averages
+        total_answers = len(answers)
+        avg_overall = round(sum(a.feedback.scores.overall_score for a in answers) / total_answers)
+        avg_content = round(sum(a.feedback.scores.content_score for a in answers) / total_answers)
+        avg_clarity = round(sum(a.feedback.scores.clarity_score for a in answers) / total_answers)
+        avg_delivery = round(sum(a.feedback.scores.delivery_score for a in answers) / total_answers)
+        avg_wpm = round(sum(a.feedback.delivery_metrics.words_per_minute for a in answers) / total_answers)
+        total_fillers = sum(a.feedback.delivery_metrics.filler_word_count for a in answers)
+        total_duration = round(sum(a.duration_seconds for a in answers), 1)
+
+        recurring_strengths = []
+        recurring_growth_areas = []
+        recommended_focus_area = ""
+
+        if self.client and self.api_key:
+            try:
+                user_prompt = build_session_summary_user_prompt(
+                    track=session.track,
+                    category=session.category,
+                    level=session.level,
+                    answers=answers
+                )
+
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": SESSION_SUMMARY_SYSTEM_PROMPT},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.5,
+                    max_tokens=800
+                )
+
+                data = json.loads(response.choices[0].message.content)
+                recurring_strengths = data.get("recurring_strengths", [])
+                recurring_growth_areas = data.get("recurring_growth_areas", [])
+                recommended_focus_area = data.get("recommended_focus_area", "")
+            except Exception as e:
+                print(f"[LLMService Warning] OpenAI session summary failed: {e}. Using fallback synthesizer.")
+
+        if not recurring_strengths:
+            # Fallback synthesis
+            recurring_strengths = [
+                f"Consistently strong technical reasoning in {session.category}.",
+                "Clear verbal structure when outlining problem approaches."
+            ]
+            recurring_growth_areas = [
+                f"Tendency to accumulate vocal fillers during transition points ({total_fillers} total detected).",
+                "Opportunity to explicitly quantify outcomes and memory tradeoffs."
+            ]
+            recommended_focus_area = (
+                "In your next session, practice taking a silent 1-2 second breath before answering instead of filler pauses, "
+                "and conclude each answer with measurable business or performance metrics."
+            )
+
+        return SessionSummary(
+            session_id=session.session_id,
+            track=session.track,
+            category=session.category,
+            level=session.level,
+            total_questions_answered=total_answers,
+            average_overall_score=avg_overall,
+            average_content_score=avg_content,
+            average_clarity_score=avg_clarity,
+            average_delivery_score=avg_delivery,
+            average_wpm=avg_wpm,
+            total_filler_words=total_fillers,
+            total_duration_seconds=total_duration,
+            recurring_strengths=recurring_strengths,
+            recurring_growth_areas=recurring_growth_areas,
+            recommended_focus_area=recommended_focus_area,
+            question_breakdown=answers
+        )
+
     def _generate_fallback_feedback(
         self,
         question: Question,
@@ -136,7 +245,6 @@ class LLMService:
         duration_seconds: float,
         delivery_metrics: DeliveryMetrics
     ) -> FeedbackResponse:
-        # Heuristic calculation for fallback mode
         word_count = len(transcript.split())
         is_behavioral = question.track == TrackType.BEHAVIORAL
 

@@ -60,6 +60,24 @@ class AnswerRecord(BaseModel):
     duration_seconds: float
     feedback: FeedbackResponse
 
+class SessionSummary(BaseModel):
+    session_id: str
+    track: TrackType
+    category: str
+    level: DifficultyLevel
+    total_questions_answered: int
+    average_overall_score: int
+    average_content_score: int
+    average_clarity_score: int
+    average_delivery_score: int
+    average_wpm: int
+    total_filler_words: int
+    total_duration_seconds: float
+    recurring_strengths: List[str]
+    recurring_growth_areas: List[str]
+    recommended_focus_area: str
+    question_breakdown: List[AnswerRecord]
+
 class SessionState(BaseModel):
     session_id: str
     track: TrackType
@@ -110,3 +128,9 @@ class SubmitAnswerResponse(BaseModel):
     feedback: FeedbackResponse
     next_question: Optional[Question] = None
     is_session_complete: bool
+
+class EndSessionRequest(BaseModel):
+    session_id: str
+
+class EndSessionResponse(BaseModel):
+    summary: SessionSummary

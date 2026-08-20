@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Mic, Sparkles, Loader2 } from 'lucide-react';
 import type {
   StartSessionRequest,
   StartSessionResponse,
   Question,
-  FeedbackResponse
+  FeedbackResponse,
+  SessionSummary
 } from './types';
-import { startInterviewSession, getNextQuestion, submitAndEvaluateAnswer } from './services/api';
+import {
+  startInterviewSession,
+  getNextQuestion,
+  submitAndEvaluateAnswer,
+  endInterviewSession
+} from './services/api';
 import { TrackSelector } from './components/setup/TrackSelector';
 import { QuestionDisplay } from './components/interview/QuestionDisplay';
+import { SessionSummaryView } from './components/summary/SessionSummaryView';
 
-type AppStep = 'setup' | 'interview' | 'complete';
+type AppStep = 'setup' | 'interview' | 'summarizing' | 'summary';
 
 export const App: React.FC = () => {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
@@ -19,18 +26,18 @@ export const App: React.FC = () => {
   const [isLoadingNext, setIsLoadingNext] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Active Session State
+  // Session state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [currentIndex, setCurrentIndex] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(5);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [summary, setSummary] = useState<SessionSummary | null>(null);
 
-  // Health check on load
   useEffect(() => {
     fetch('http://localhost:8000/health')
-      .then((res) => res.json())
+      .then(res => res.json())
       .then(() => setBackendStatus('online'))
       .catch(() => setBackendStatus('offline'));
   }, []);
@@ -82,10 +89,12 @@ export const App: React.FC = () => {
     setIsLoadingNext(true);
     setErrorMessage(null);
     setEvaluationError(null);
+
     try {
       const response = await getNextQuestion(sessionId);
       if (response.is_completed || !response.question) {
-        setCurrentStep('complete');
+        // Session complete — fetch summary
+        await handleEndSession();
       } else {
         setCurrentQuestion(response.question);
         setCurrentIndex(response.current_question_index);
@@ -97,17 +106,32 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleEndSession = async () => {
+    if (!sessionId) return;
+    setCurrentStep('summarizing');
+    try {
+      const result = await endInterviewSession(sessionId);
+      setSummary(result.summary);
+      setCurrentStep('summary');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to generate session summary');
+      setCurrentStep('interview');
+    }
+  };
+
   const handleResetSession = () => {
     setSessionId(null);
     setCurrentQuestion(null);
     setCurrentIndex(1);
+    setSummary(null);
     setEvaluationError(null);
+    setErrorMessage(null);
     setCurrentStep('setup');
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-4 sm:p-6">
-      {/* Top Navigation */}
+      {/* Header */}
       <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b border-slate-800/80">
         <div className="flex items-center space-x-3 cursor-pointer" onClick={handleResetSession}>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
@@ -138,25 +162,17 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main */}
       <main className="max-w-4xl w-full mx-auto my-auto py-8">
         {errorMessage && (
           <div className="mb-6 p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center justify-between">
             <span>{errorMessage}</span>
-            <button
-              onClick={() => setErrorMessage(null)}
-              className="text-red-400 hover:text-white font-bold ml-2 cursor-pointer"
-            >
-              &times;
-            </button>
+            <button onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-white font-bold ml-2 cursor-pointer">&times;</button>
           </div>
         )}
 
         {currentStep === 'setup' && (
-          <TrackSelector
-            onStartSession={handleStartSession}
-            isLoading={isStartingSession}
-          />
+          <TrackSelector onStartSession={handleStartSession} isLoading={isStartingSession} />
         )}
 
         {currentStep === 'interview' && currentQuestion && (
@@ -173,42 +189,36 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentStep === 'complete' && (
-          <div className="max-w-xl mx-auto glass-panel p-8 rounded-3xl text-center space-y-6 animate-fadeIn border-slate-800">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-950/80 border border-emerald-800/50 flex items-center justify-center mx-auto text-emerald-400">
-              <CheckCircle2 className="w-8 h-8" />
+        {currentStep === 'summarizing' && (
+          <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-fadeIn">
+            <div className="w-16 h-16 rounded-2xl bg-violet-950/60 border border-violet-800/50 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Interview Practice Completed!</h2>
-              <p className="text-sm text-slate-400 mt-2">
-                You successfully answered and received AI coaching on all {totalQuestions} questions.
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-white">Generating Your Performance Summary...</h3>
+              <p className="text-sm text-slate-400">
+                AI coach is analyzing patterns across all {totalQuestions} of your answers.
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 text-left space-y-2">
-              <div className="font-semibold text-violet-400 flex items-center space-x-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Next up in Stage 5:</span>
-              </div>
-              <p className="text-slate-400">
-                End-of-session aggregate performance dashboard (overall trends, recurring strengths/weaknesses, and post-workout summary).
-              </p>
+            <div className="flex items-center space-x-2 text-xs text-violet-400 animate-pulse">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Synthesizing strengths, growth areas, and your personalized focus goal</span>
             </div>
-            <button
-              type="button"
-              onClick={handleResetSession}
-              className="py-3 px-6 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold flex items-center justify-center space-x-2 mx-auto transition-all cursor-pointer"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Practice Another Track</span>
-            </button>
           </div>
+        )}
+
+        {currentStep === 'summary' && summary && (
+          <SessionSummaryView
+            summary={summary}
+            onPracticeAgain={handleResetSession}
+          />
         )}
       </main>
 
       {/* Footer */}
       <footer className="max-w-5xl w-full mx-auto py-4 border-t border-slate-900 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <span>AI Mock Interview Coach &copy; 2026</span>
-        <span className="text-violet-400/80">Stage 4: Structured Feedback & Delivery Analytics Active</span>
+        <span className="text-violet-400/80">Stage 5: Session Flow & Summary Active</span>
       </footer>
     </div>
   );

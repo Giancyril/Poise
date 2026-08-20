@@ -10,6 +10,8 @@ from app.models.schemas import (
     TranscribeAudioResponse,
     SubmitAnswerResponse,
     FeedbackResponse,
+    EndSessionRequest,
+    EndSessionResponse,
     SessionState
 )
 from app.services.session_manager import session_manager
@@ -254,6 +256,23 @@ async def submit_and_evaluate_answer(
         next_question=None,
         is_session_complete=is_complete
     )
+
+@router.post("/end", response_model=EndSessionResponse)
+async def end_interview_session(req: EndSessionRequest):
+    """
+    Finalizes the interview session and generates the holistic performance summary.
+    """
+    session = session_manager.get_session(req.session_id)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+
+    session.is_completed = True
+    summary = await llm_service.generate_session_summary(session)
+
+    return EndSessionResponse(summary=summary)
 
 @router.get("/session/{session_id}", response_model=SessionState)
 async def get_session_state(session_id: str):

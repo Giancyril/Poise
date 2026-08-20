@@ -62,6 +62,32 @@ export interface FeedbackResponse {
   rewritten_snippet: string;
 }
 
+export interface AnswerRecord {
+  question: Question;
+  transcript: string;
+  duration_seconds: number;
+  feedback: FeedbackResponse;
+}
+
+export interface SessionSummary {
+  session_id: string;
+  track: TrackType;
+  category: string;
+  level: DifficultyLevel;
+  total_questions_answered: number;
+  average_overall_score: number;
+  average_content_score: number;
+  average_clarity_score: number;
+  average_delivery_score: number;
+  average_wpm: number;
+  total_filler_words: number;
+  total_duration_seconds: number;
+  recurring_strengths: string[];
+  recurring_growth_areas: string[];
+  recommended_focus_area: string;
+  question_breakdown: AnswerRecord[];
+}
+
 export interface StartSessionRequest {
   track: TrackType;
   category: string;
@@ -102,4 +128,8 @@ export interface SubmitAnswerResponse {
   feedback: FeedbackResponse;
   next_question: Question | null;
   is_session_complete: boolean;
+}
+
+export interface EndSessionResponse {
+  summary: SessionSummary;
 }
