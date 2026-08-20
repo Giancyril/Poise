@@ -98,7 +98,7 @@ class SessionState(BaseModel):
     level: DifficultyLevel
     total_questions: int
     current_question_index: int = 1
-    questions_history: List[Question] = Field(default_factory=list)
+    asked_questions: List[Question] = Field(default_factory=list)
     answers: List[AnswerRecord] = Field(default_factory=list)
     is_completed: bool = False
 
