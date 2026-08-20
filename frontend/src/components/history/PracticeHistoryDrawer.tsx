@@ -48,9 +48,6 @@ export const PracticeHistoryDrawer: React.FC<PracticeHistoryDrawerProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center space-x-2.5">
-              <div className="p-2 rounded-xl bg-violet-600/20 text-violet-400">
-                <History className="w-4 h-4" />
-              </div>
               <h3 className="text-base font-bold text-white">Practice History & Trends</h3>
             </div>
             <button
@@ -103,8 +100,8 @@ export const PracticeHistoryDrawer: React.FC<PracticeHistoryDrawerProps> = ({
                 const scoreBg = s.average_overall_score >= 85
                   ? 'bg-emerald-950/60 border-emerald-800/50 text-emerald-300'
                   : s.average_overall_score >= 70
-                  ? 'bg-violet-950/60 border-violet-800/50 text-violet-300'
-                  : 'bg-amber-950/60 border-amber-800/50 text-amber-300';
+                    ? 'bg-violet-950/60 border-violet-800/50 text-violet-300'
+                    : 'bg-amber-950/60 border-amber-800/50 text-amber-300';
 
                 return (
                   <div

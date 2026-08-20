@@ -8,8 +8,7 @@ import {
   ChevronRight,
   Loader2,
   X,
-  Code,
-  Users
+  Code
 } from 'lucide-react';
 import type {
   CustomJDRequest,
@@ -196,7 +195,6 @@ export const JDImporterModal: React.FC<JDImporterModalProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-                <FileText className="w-3.5 h-3.5 text-slate-400" />
                 <span>Paste Job Description Text</span>
               </label>
               <button

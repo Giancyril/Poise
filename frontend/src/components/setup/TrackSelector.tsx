@@ -8,8 +8,7 @@ import {
   Briefcase,
   Loader2,
   Volume2,
-  FileText,
-  Sparkles
+  FileText
 } from 'lucide-react';
 import type {
   TrackType,
@@ -154,7 +153,6 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
           onClick={() => setIsJDModalOpen(true)}
           className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex-shrink-0"
         >
-          <Sparkles className="w-3.5 h-3.5" />
           <span>Paste Job Description</span>
         </button>
       </div>
@@ -307,14 +305,12 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
             role="switch"
             aria-checked={autoSpeak}
             onClick={() => setAutoSpeak(v => !v)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 ${
-              autoSpeak ? 'bg-violet-600' : 'bg-slate-700'
-            }`}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 ${autoSpeak ? 'bg-violet-600' : 'bg-slate-700'
+              }`}
           >
             <span
-              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                autoSpeak ? 'translate-x-4' : 'translate-x-1'
-              }`}
+              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${autoSpeak ? 'translate-x-4' : 'translate-x-1'
+                }`}
             />
           </button>
         </div>
