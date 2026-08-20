@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.api.routes import router as interview_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -16,6 +17,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount Routes
+app.include_router(interview_router)
 
 @app.get("/")
 async def root():
