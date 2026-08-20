@@ -13,9 +13,14 @@ import {
   Clock,
   MessageSquareQuote,
   Award,
-  BarChart3
+  BarChart3,
+  FileDown,
+  Printer,
+  Loader2,
+  Share2
 } from 'lucide-react';
 import type { SessionSummary } from '../../types';
+import { exportSessionReport, downloadFile } from '../../services/api';
 
 interface SessionSummaryViewProps {
   summary: SessionSummary;
@@ -27,6 +32,38 @@ export const SessionSummaryView: React.FC<SessionSummaryViewProps> = ({
   onPracticeAgain
 }) => {
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+  const [isExportingMd, setIsExportingMd] = useState(false);
+  const [isExportingHtml, setIsExportingHtml] = useState(false);
+
+  const handleExportMarkdown = async () => {
+    setIsExportingMd(true);
+    try {
+      const res = await exportSessionReport({ summary, format: 'markdown' });
+      downloadFile(res.content, res.filename, 'text/markdown');
+    } catch (e) {
+      console.error('Failed to export markdown report', e);
+    } finally {
+      setIsExportingMd(false);
+    }
+  };
+
+  const handleExportPrintable = async () => {
+    setIsExportingHtml(true);
+    try {
+      const res = await exportSessionReport({ summary, format: 'html' });
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(res.content);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => printWindow.print(), 350);
+      }
+    } catch (e) {
+      console.error('Failed to open print report', e);
+    } finally {
+      setIsExportingHtml(false);
+    }
+  };
 
   const {
     total_questions_answered,
@@ -266,14 +303,37 @@ export const SessionSummaryView: React.FC<SessionSummaryViewProps> = ({
         </div>
       )}
 
-      {/* 7. CTA */}
-      <div className="text-center space-y-3 pt-2">
+      {/* 7. Export & Practice Again CTA Bar */}
+      <div className="flex flex-col items-center space-y-4 pt-3">
+        {/* Export Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleExportMarkdown}
+            disabled={isExportingMd}
+            className="inline-flex items-center space-x-2 py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-200 hover:text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            {isExportingMd ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5 text-violet-400" />}
+            <span>Download Markdown (.md)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportPrintable}
+            disabled={isExportingHtml}
+            className="inline-flex items-center space-x-2 py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-200 hover:text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            {isExportingHtml ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5 text-indigo-400" />}
+            <span>Print / Save PDF Report</span>
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={onPracticeAgain}
-          className="inline-flex items-center space-x-2.5 py-4 px-8 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-violet-600/25 transition-all transform hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
+          className="inline-flex items-center space-x-2.5 py-3.5 px-8 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-violet-600/25 transition-all transform hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
         >
-          <RefreshCw className="w-5 h-5" />
+          <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>Practice Another Session</span>
         </button>
         <p className="text-xs text-slate-500">

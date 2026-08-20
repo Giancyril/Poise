@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, History } from 'lucide-react';
 import type {
   StartSessionRequest,
   StartSessionResponse,
@@ -17,8 +17,11 @@ import {
 import { TrackSelector } from './components/setup/TrackSelector';
 import { QuestionDisplay } from './components/interview/QuestionDisplay';
 import { SessionSummaryView } from './components/summary/SessionSummaryView';
+import { PracticeHistoryDrawer, type StoredSessionItem } from './components/history/PracticeHistoryDrawer';
 
 type AppStep = 'setup' | 'interview' | 'summarizing' | 'summary';
+
+const HISTORY_STORAGE_KEY = 'poise_session_history';
 
 export const App: React.FC = () => {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
@@ -37,12 +40,49 @@ export const App: React.FC = () => {
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [autoSpeak, setAutoSpeak] = useState(true);
 
+  // Practice History state
+  const [historyItems, setHistoryItems] = useState<StoredSessionItem[]>([]);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+
   useEffect(() => {
     fetch('http://localhost:8000/health')
       .then(res => res.json())
       .then(() => setBackendStatus('online'))
       .catch(() => setBackendStatus('offline'));
+
+    try {
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (saved) {
+        setHistoryItems(JSON.parse(saved));
+      }
+    } catch {
+      // ignore localStorage parse issues
+    }
   }, []);
+
+  const saveSummaryToHistory = (s: SessionSummary) => {
+    const newItem: StoredSessionItem = {
+      id: s.session_id,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      summary: s
+    };
+    const updated = [newItem, ...historyItems.filter(h => h.id !== s.session_id)].slice(0, 20);
+    setHistoryItems(updated);
+    try {
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const handleClearHistory = () => {
+    setHistoryItems([]);
+    try {
+      localStorage.removeItem(HISTORY_STORAGE_KEY);
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   const handleStartSession = async (config: StartSessionRequest, speakPref: boolean = true) => {
     setIsStartingSession(true);
@@ -125,6 +165,7 @@ export const App: React.FC = () => {
     try {
       const result = await endInterviewSession(sessionId);
       setSummary(result.summary);
+      saveSummaryToHistory(result.summary);
       setCurrentStep('summary');
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to generate session summary');
@@ -142,12 +183,16 @@ export const App: React.FC = () => {
     setCurrentStep('setup');
   };
 
+  const handleSelectHistorySummary = (s: SessionSummary) => {
+    setSummary(s);
+    setCurrentStep('summary');
+  };
+
   return (
     <div className="min-h-screen text-slate-100 flex flex-col justify-between p-4 sm:p-6 relative z-10">
       {/* Header */}
       <header className="max-w-5xl w-full mx-auto flex items-center justify-between py-4 border-b border-slate-800/80">
         <div className="flex items-center space-x-3 cursor-pointer group" onClick={handleResetSession}>
-
           <div>
             <h1 className="font-extrabold text-base sm:text-lg tracking-widest gradient-text">
               POISE
@@ -156,7 +201,22 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 text-xs">
+        <div className="flex items-center space-x-3 text-xs">
+          {/* History Drawer Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsHistoryDrawerOpen(true)}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <History className="w-3.5 h-3.5 text-violet-400" />
+            <span>History</span>
+            {historyItems.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-violet-600 text-white font-bold text-[10px]">
+                {historyItems.length}
+              </span>
+            )}
+          </button>
+
           <span className="text-slate-400 hidden sm:inline">Backend API:</span>
           {backendStatus === 'online' && (
             <span className="flex items-center text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-3 py-1 rounded-full font-semibold badge-emerald">
@@ -231,6 +291,15 @@ export const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Practice History Drawer */}
+      <PracticeHistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        history={historyItems}
+        onSelectSession={handleSelectHistorySummary}
+        onClearHistory={handleClearHistory}
+      />
 
       {/* Footer */}
       <footer className="max-w-5xl w-full mx-auto py-5 border-t border-slate-900/80 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
