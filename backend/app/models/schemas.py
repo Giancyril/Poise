@@ -205,3 +205,33 @@ class FollowUpResponse(BaseModel):
     suggested_answer_direction: str = Field(
         ..., description="What a great answer would cover — shown as a hint if the candidate requests one"
     )
+
+# ── Feature 4: Custom Interview Architect & JD Ingestion ─────────────────────
+
+class CustomJDRequest(BaseModel):
+    """Candidate submits a raw Job Description text to calibrate a bespoke interview session."""
+    job_title: str = Field(..., min_length=2, max_length=150, description="Role title e.g. Senior Distributed Systems Engineer")
+    company_name: Optional[str] = Field(default="Target Company", max_length=100, description="Company name e.g. Stripe, Netflix")
+    job_description_text: str = Field(..., min_length=20, max_length=10000, description="Pasted job description text")
+    level: DifficultyLevel = Field(default=DifficultyLevel.SENIOR)
+    track: Optional[TrackType] = Field(default=TrackType.TECHNICAL)
+    total_questions: int = Field(default=5, ge=1, le=10)
+
+class ExtractedJDSkills(BaseModel):
+    primary_technologies: List[str] = Field(default_factory=list)
+    architectural_domains: List[str] = Field(default_factory=list)
+    behavioral_competencies: List[str] = Field(default_factory=list)
+    seniority_signals: List[str] = Field(default_factory=list)
+
+class CustomJDSessionResponse(BaseModel):
+    session_id: str
+    job_title: str
+    company_name: str
+    track: TrackType
+    category: str
+    level: DifficultyLevel
+    total_questions: int
+    current_question_index: int
+    extracted_skills: ExtractedJDSkills
+    question: Question
+    tailored_questions: List[Question] = Field(default_factory=list)
