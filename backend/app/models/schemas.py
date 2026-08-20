@@ -173,3 +173,35 @@ class SpeechTelemetryResponse(BaseModel):
     estimated_wpm: int
     pace_label: PaceAssessment
     coaching_tip: str
+
+# ── Feature 3: Multi-Turn Follow-Up & Probing Engine ─────────────────────────
+
+class FollowUpDepth(str, Enum):
+    SHALLOW = "shallow"    # First drill-down — clarify / expand
+    MEDIUM = "medium"      # Second drill-down — challenge assumption
+    DEEP = "deep"          # Third drill-down — stress test edge case
+
+class FollowUpRequest(BaseModel):
+    """Client sends this to request a contextual follow-up question."""
+    session_id: str
+    question_id: str = Field(..., description="The original question being followed up on")
+    transcript: str = Field(..., min_length=1, max_length=5000, description="Candidate's previous answer")
+    depth: Optional[FollowUpDepth] = Field(
+        default=FollowUpDepth.SHALLOW,
+        description="How deep into the topic to probe"
+    )
+    track: TrackType
+    category: str
+    level: DifficultyLevel
+
+class FollowUpResponse(BaseModel):
+    """Server responds with a contextual probe question and coaching context."""
+    session_id: str
+    parent_question_id: str
+    follow_up_id: str
+    follow_up_question: str
+    depth: FollowUpDepth
+    rationale: str = Field(..., description="Why this follow-up was chosen — shown to the interviewer, not the candidate")
+    suggested_answer_direction: str = Field(
+        ..., description="What a great answer would cover — shown as a hint if the candidate requests one"
+    )
