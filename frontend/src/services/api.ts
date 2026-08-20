@@ -12,7 +12,9 @@ import type {
   FollowUpRequest,
   FollowUpResponse,
   CustomJDRequest,
-  CustomJDSessionResponse
+  CustomJDSessionResponse,
+  ReportExportRequest,
+  ReportExportResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -196,3 +198,32 @@ export async function importJDAndCreateSession(
   }
   return response.json();
 }
+
+// ── Feature 5: Exportable PDF/Markdown Reports ───────────────────────────────
+
+export async function exportSessionReport(
+  req: ReportExportRequest
+): Promise<ReportExportResponse> {
+  const response = await fetch(`${API_BASE}/api/interview/report/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req)
+  });
+  if (!response.ok) {
+    throw new Error('Failed to generate session report');
+  }
+  return response.json();
+}
+
+export function downloadFile(content: string, filename: string, mimeType: string = 'text/markdown') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+

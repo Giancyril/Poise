@@ -223,3 +223,23 @@ export interface CustomJDSessionResponse {
   question: Question;
   tailored_questions: Question[];
 }
+
+// ── Feature 5: Exportable PDF/Markdown Reports & Practice History ────────────
+
+export type ReportFormat = 'markdown' | 'html' | 'json';
+
+export interface ReportExportRequest {
+  summary: SessionSummary;
+  candidate_name?: string;
+  format?: ReportFormat;
+  include_transcripts?: boolean;
+  include_rubric_breakdown?: boolean;
+}
+
+export interface ReportExportResponse {
+  session_id: string;
+  format: ReportFormat;
+  filename: string;
+  content: string;
+  download_url?: string;
+}
