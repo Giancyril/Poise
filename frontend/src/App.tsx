@@ -34,6 +34,7 @@ export const App: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(5);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [autoSpeak, setAutoSpeak] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:8000/health')
@@ -42,8 +43,9 @@ export const App: React.FC = () => {
       .catch(() => setBackendStatus('offline'));
   }, []);
 
-  const handleStartSession = async (config: StartSessionRequest) => {
+  const handleStartSession = async (config: StartSessionRequest, speakPref: boolean = true) => {
     setIsStartingSession(true);
+    setAutoSpeak(speakPref);
     setErrorMessage(null);
     try {
       const response: StartSessionResponse = await startInterviewSession(config);
@@ -184,6 +186,7 @@ export const App: React.FC = () => {
             isEvaluating={isEvaluating}
             evaluationError={evaluationError}
             isLoadingNext={isLoadingNext}
+            autoSpeak={autoSpeak}
           />
         )}
 

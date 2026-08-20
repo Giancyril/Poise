@@ -6,7 +6,8 @@ import {
   Layers,
   BarChart2,
   Briefcase,
-  Loader2
+  Loader2,
+  Volume2
 } from 'lucide-react';
 import type {
   TrackType,
@@ -18,7 +19,7 @@ import type {
 import { getTracksAndCategories } from '../../services/api';
 
 interface TrackSelectorProps {
-  onStartSession: (config: StartSessionRequest) => void;
+  onStartSession: (config: StartSessionRequest, autoSpeak: boolean) => void;
   isLoading: boolean;
 }
 
@@ -64,6 +65,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<DifficultyLevel>('mid');
   const [totalQuestions, setTotalQuestions] = useState<number>(5);
+  const [autoSpeak, setAutoSpeak] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isLoadingTracks, setIsLoadingTracks] = useState(true);
 
@@ -94,7 +96,10 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
   };
 
   const handleStart = () => {
-    onStartSession({ track: selectedTrack, category: selectedCategory, level: selectedLevel, total_questions: totalQuestions });
+    onStartSession(
+      { track: selectedTrack, category: selectedCategory, level: selectedLevel, total_questions: totalQuestions },
+      autoSpeak
+    );
   };
 
   return (
@@ -252,8 +257,32 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
         </div>
       </div>
 
-      {/* ── 4. CTA ── */}
-      <div className="pt-1 animate-fadeSlideUp stagger-4">
+      {/* ── 4. Auto-Speak & CTA ── */}
+      <div className="space-y-3 pt-1 animate-fadeSlideUp stagger-4">
+        {/* Auto-speak toggle */}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-300">Auto-read questions aloud</span>
+            <span className="text-[11px] text-slate-500">(AI Voice · OpenAI TTS)</span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoSpeak}
+            onClick={() => setAutoSpeak(v => !v)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 ${
+              autoSpeak ? 'bg-violet-600' : 'bg-slate-700'
+            }`}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                autoSpeak ? 'translate-x-4' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={handleStart}
