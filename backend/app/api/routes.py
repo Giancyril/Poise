@@ -18,7 +18,9 @@ from app.models.schemas import (
     SpeechTelemetryResponse,
     PaceAssessment,
     FollowUpRequest,
-    FollowUpResponse
+    FollowUpResponse,
+    CustomJDRequest,
+    CustomJDSessionResponse
 )
 from app.services.session_manager import session_manager
 from app.services.llm_service import llm_service
@@ -26,6 +28,7 @@ from app.services.whisper_service import whisper_service
 from app.services.delivery_service import delivery_service
 from app.services.tts_service import tts_service
 from app.services.follow_up_service import follow_up_service
+from app.services.jd_analysis_service import jd_analysis_service
 
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
 
@@ -122,13 +125,18 @@ async def get_next_question(req: NextQuestionRequest):
             is_completed=True
         )
 
-    previously_asked = session_manager.get_previously_asked_texts(session.session_id)
-    next_question = await llm_service.generate_question(
-        track=session.track,
-        category=session.category,
-        level=session.level,
-        previously_asked=previously_asked
-    )
+    # Check if there is a pre-compiled custom question from JD ingestion
+    custom_q = session_manager.get_custom_question_for_index(session.session_id, session.current_question_index)
+    if custom_q:
+        next_question = custom_q
+    else:
+        previously_asked = session_manager.get_previously_asked_texts(session.session_id)
+        next_question = await llm_service.generate_question(
+            track=session.track,
+            category=session.category,
+            level=session.level,
+            previously_asked=previously_asked
+        )
 
     session_manager.add_question_to_session(session.session_id, next_question)
 
@@ -372,4 +380,50 @@ async def generate_follow_up_question(req: FollowUpRequest) -> FollowUpResponse:
     based on the candidate's actual answer transcript.
     """
     return await follow_up_service.generate_follow_up(req)
+
+# ── Feature 4: Custom Interview Architect & JD Ingestion ─────────────────────
+
+@router.post("/custom-jd", response_model=CustomJDSessionResponse)
+async def create_custom_jd_session(req: CustomJDRequest) -> CustomJDSessionResponse:
+    """
+    Ingests a raw Job Description, extracts tech stack & competencies via GPT-4o,
+    compiles bespoke questions, and starts a live practice interview session.
+    """
+    extracted_skills, questions = await jd_analysis_service.analyze_and_generate_session(req)
+    
+    if not questions:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate tailored questions from Job Description"
+        )
+    
+    track = req.track or TrackType.TECHNICAL
+    category = f"{req.job_title} @ {req.company_name or 'Target'}"
+
+    # Register in SessionManager so existing submit & progression routes work seamlessly
+    state = session_manager.create_session(
+        track=track,
+        category=category,
+        level=req.level,
+        total_questions=req.total_questions
+    )
+    
+    # Override session questions with JD-customized question bank
+    session_manager.set_custom_questions(state.session_id, questions)
+    
+    first_q = questions[0]
+    
+    return CustomJDSessionResponse(
+        session_id=state.session_id,
+        job_title=req.job_title,
+        company_name=req.company_name or "Target Company",
+        track=track,
+        category=category,
+        level=req.level,
+        total_questions=req.total_questions,
+        current_question_index=1,
+        extracted_skills=extracted_skills,
+        question=first_q,
+        tailored_questions=questions
+    )
 

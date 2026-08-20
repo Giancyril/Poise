@@ -8,6 +8,21 @@ class SessionManager:
     """
     def __init__(self):
         self._sessions: Dict[str, SessionState] = {}
+        self._custom_question_queues: Dict[str, List[Question]] = {}
+
+    def set_custom_questions(self, session_id: str, questions: List[Question]) -> None:
+        """Stores a pre-compiled tailored question bank for a JD-calibrated session."""
+        self._custom_question_queues[session_id] = list(questions)
+        session = self.get_session(session_id)
+        if session and questions:
+            session.asked_questions = [questions[0]]
+
+    def get_custom_question_for_index(self, session_id: str, index: int) -> Optional[Question]:
+        """Retrieves the pre-generated custom question for the given 1-based question index."""
+        queue = self._custom_question_queues.get(session_id)
+        if queue and 0 <= index - 1 < len(queue):
+            return queue[index - 1]
+        return None
 
     def create_session(
         self,
