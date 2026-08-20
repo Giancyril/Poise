@@ -147,3 +147,29 @@ class EndSessionRequest(BaseModel):
 
 class EndSessionResponse(BaseModel):
     summary: SessionSummary
+
+# ── Feature 2: Real-time Speech Telemetry ─────────────────────────────────────
+
+class PaceAssessment(str, Enum):
+    TOO_SLOW = "too_slow"
+    GOOD = "good"
+    OPTIMAL = "optimal"
+    A_BIT_FAST = "a_bit_fast"
+    TOO_FAST = "too_fast"
+    NO_SPEECH = "no_speech"
+
+class SpeechTelemetrySnapshot(BaseModel):
+    """Frontend submits this after each recording to persist telemetry alongside feedback."""
+    session_id: str
+    question_id: str
+    estimated_wpm: int = Field(ge=0, le=500)
+    peak_volume: float = Field(ge=0.0, le=1.0, description="Max volume observed [0, 1]")
+    avg_volume: float = Field(ge=0.0, le=1.0, description="Mean volume over the recording")
+    recording_duration_seconds: float = Field(ge=0.0)
+
+class SpeechTelemetryResponse(BaseModel):
+    session_id: str
+    question_id: str
+    estimated_wpm: int
+    pace_label: PaceAssessment
+    coaching_tip: str
