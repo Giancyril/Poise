@@ -2,13 +2,9 @@ import React from 'react';
 import {
   History,
   X,
-  TrendingUp,
   Award,
-  Calendar,
-  Layers,
   ChevronRight,
   Trash2,
-  FileText,
   Activity
 } from 'lucide-react';
 import type { SessionSummary } from '../../types';
