@@ -7,19 +7,24 @@ import {
   BarChart2,
   Briefcase,
   Loader2,
-  Volume2
+  Volume2,
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import type {
   TrackType,
   DifficultyLevel,
   TrackOption,
   LevelOption,
-  StartSessionRequest
+  StartSessionRequest,
+  CustomJDSessionResponse
 } from '../../types';
 import { getTracksAndCategories } from '../../services/api';
+import { JDImporterModal } from './JDImporterModal';
 
 interface TrackSelectorProps {
   onStartSession: (config: StartSessionRequest, autoSpeak: boolean) => void;
+  onCustomSessionCreated?: (response: CustomJDSessionResponse, autoSpeak: boolean) => void;
   isLoading: boolean;
 }
 
@@ -58,7 +63,11 @@ const FALLBACK_LEVELS: LevelOption[] = [
 
 const QUESTION_COUNTS = [3, 5, 7, 10];
 
-export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, isLoading }) => {
+export const TrackSelector: React.FC<TrackSelectorProps> = ({
+  onStartSession,
+  onCustomSessionCreated,
+  isLoading
+}) => {
   const [tracks, setTracks] = useState<TrackOption[]>([]);
   const [levels, setLevels] = useState<LevelOption[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<TrackType>('technical');
@@ -68,6 +77,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
   const [autoSpeak, setAutoSpeak] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isLoadingTracks, setIsLoadingTracks] = useState(true);
+  const [isJDModalOpen, setIsJDModalOpen] = useState(false);
 
   useEffect(() => {
     setIsLoadingTracks(true);
@@ -122,6 +132,32 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
           {fetchError}
         </div>
       )}
+
+      {/* ── Custom JD Ingestion Card (Feature 4 Highlight) ── */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-950/60 via-purple-950/40 to-slate-900/80 border border-violet-700/50 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3.5">
+        <div className="flex items-center space-x-3 text-left">
+          <div className="p-2.5 rounded-xl bg-violet-600/30 border border-violet-500/40 text-violet-300 flex-shrink-0">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-xs sm:text-sm text-white">Target a Specific Job Description</span>
+              <span className="badge badge-violet text-[10px]">New · GPT-4o</span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Paste your target JD to extract tech stacks & architect a bespoke interview loop.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsJDModalOpen(true)}
+          className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex-shrink-0"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Paste Job Description</span>
+        </button>
+      </div>
 
       {/* ── 1. Track Selector Cards (Primary Choice) ── */}
       <div className="grid grid-cols-2 gap-4">
@@ -302,6 +338,17 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ onStartSession, is
           )}
         </button>
       </div>
+
+      {/* ── JD Importer Modal ── */}
+      <JDImporterModal
+        isOpen={isJDModalOpen}
+        onClose={() => setIsJDModalOpen(false)}
+        onSessionCreated={(res) => {
+          if (onCustomSessionCreated) {
+            onCustomSessionCreated(res, autoSpeak);
+          }
+        }}
+      />
     </div>
   );
 };

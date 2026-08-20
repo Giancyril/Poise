@@ -5,7 +5,8 @@ import type {
   StartSessionResponse,
   Question,
   FeedbackResponse,
-  SessionSummary
+  SessionSummary,
+  CustomJDSessionResponse
 } from './types';
 import {
   startInterviewSession,
@@ -59,6 +60,16 @@ export const App: React.FC = () => {
     } finally {
       setIsStartingSession(false);
     }
+  };
+
+  const handleCustomSessionCreated = (response: CustomJDSessionResponse, speakPref: boolean = true) => {
+    setAutoSpeak(speakPref);
+    setErrorMessage(null);
+    setSessionId(response.session_id);
+    setCurrentQuestion(response.question);
+    setCurrentIndex(response.current_question_index);
+    setTotalQuestions(response.total_questions);
+    setCurrentStep('interview');
   };
 
   const handleAnswerSubmitted = async (params: {
@@ -172,7 +183,11 @@ export const App: React.FC = () => {
         )}
 
         {currentStep === 'setup' && (
-          <TrackSelector onStartSession={handleStartSession} isLoading={isStartingSession} />
+          <TrackSelector
+            onStartSession={handleStartSession}
+            onCustomSessionCreated={handleCustomSessionCreated}
+            isLoading={isStartingSession}
+          />
         )}
 
         {currentStep === 'interview' && currentQuestion && (
