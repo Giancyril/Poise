@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Play, Pause, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
 
 interface InterviewerVoiceAvatarProps {
   isPlaying: boolean;

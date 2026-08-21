@@ -66,7 +66,6 @@ export const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     isFallback: isVoiceFallback,
     speak,
     pause: pauseVoice,
-    resume: resumeVoice,
     stop: stopVoice
   } = useAudioPlayer();
 

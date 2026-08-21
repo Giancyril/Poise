@@ -79,7 +79,7 @@ export const SpeechTelemetryHUD: React.FC<SpeechTelemetryHUDProps> = ({
         <Mic className="w-3 h-3 text-slate-500 flex-shrink-0" />
         <VolumeBar volume={volume} />
         {isClipping && (
-          <AlertTriangle className="w-3 h-3 text-red-400 animate-pulse flex-shrink-0" title="Input too loud" />
+          <AlertTriangle className="w-3 h-3 text-red-400 animate-pulse flex-shrink-0" aria-label="Input too loud" />
         )}
       </div>
 
